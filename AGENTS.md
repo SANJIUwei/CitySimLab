@@ -13,8 +13,9 @@ Do not implement gameplay systems unless the user explicitly asks for implementa
 1. Run `git status --short`.
 2. If a remote exists, run `git pull --ff-only` before editing.
 3. Read `docs/CODEX_HANDOFF.md`.
-4. Read only the docs or source files needed for the current request.
-5. Verify the environment with `tools/verify.ps1` when practical.
+4. For teaching tasks, read `docs/CODEX_TEACHING_PLAN.md`.
+5. Read only the docs or source files needed for the current request.
+6. Verify the environment with `tools/verify.ps1` when practical.
 
 ## Session Close Protocol
 

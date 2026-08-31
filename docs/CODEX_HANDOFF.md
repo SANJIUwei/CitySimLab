@@ -4,13 +4,13 @@ This document is for Codex agents, not tutorial prose. Keep it compact and updat
 
 ## Current State
 
-- Last updated: 2026-08-31 13:36 +08:00
+- Last updated: 2026-08-31 14:04 +08:00
 - Last known location: work
 - Root: `E:\Myself\CitySimLab`
 - Branch: `main`
 - Remote: `https://github.com/SANJIUwei/CitySimLab.git`
 - Tracking: `main -> origin/main`
-- Sync status: compressed handoff docs pushed to `origin/main`
+- Sync status: local branch is ahead of `origin/main` by 1 commit because GitHub push failed after adding the teaching plan
 - Working tree should be clean after each session close
 
 ## Project Intent
@@ -29,6 +29,7 @@ This document is for Codex agents, not tutorial prose. Keep it compact and updat
 - Tests: `tests/CitySim.Tests`
 - Docs: `docs`
 - Verification script: `tools\verify.ps1`
+- Codex teaching plan: `docs/CODEX_TEACHING_PLAN.md`
 
 ## Git Sync Rules
 
@@ -40,14 +41,16 @@ This document is for Codex agents, not tutorial prose. Keep it compact and updat
 
 ## Last Verification
 
-- `tools\verify.ps1`: passed on 2026-08-31 13:36 +08:00.
+- `tools\verify.ps1`: passed on 2026-08-31 14:01 +08:00.
 - `git ls-remote --heads origin main`: confirmed remote `main` on 2026-08-31 11:40 +08:00.
 - `git push`: passed on 2026-08-31 12:13 +08:00.
+- `git push`: failed on 2026-08-31 14:04 +08:00 because this machine could not reach `github.com:443`; retry when network is available.
 
 ## Latest Work
 
 - README was changed to a public-facing GitHub project overview.
 - Teaching prompts and Codex-specific workflow notes belong in `docs/` and `AGENTS.md`, not in the GitHub landing README.
+- Added a Codex-only teaching plan in `docs/CODEX_TEACHING_PLAN.md`; it is evidence-based and must not be treated as permission to implement gameplay.
 
 ## Next Recommended Action
 

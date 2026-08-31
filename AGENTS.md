@@ -59,3 +59,10 @@ If verification passes and changes are intentional, commit with a short message.
 - Prefer `main` as the long-lived branch.
 - Keep generated build outputs out of Git.
 - Avoid committing secrets, tokens, `.env` files, Unity Library folders, or local machine paths except documented setup paths.
+
+## Sync Tool Notes
+
+- On the work/company machine, the intended GitHub UI tool is GitHub Desktop.
+- Do not confuse VS Code sign-in with GitHub Desktop sign-in.
+- Do not assume `gh` authentication, Git Credential Manager credentials, VS Code GitHub auth, and GitHub Desktop auth are interchangeable.
+- Codex may open the repository in GitHub Desktop, but the user must approve any GitHub Desktop UI authentication or publish prompts.

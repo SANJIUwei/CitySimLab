@@ -65,4 +65,7 @@ If verification passes and changes are intentional, commit with a short message.
 - Do not use the user's GitHub Desktop for this project.
 - Do not open GitHub Desktop, inspect GitHub Desktop state, or rely on GitHub Desktop authentication.
 - Do not confuse VS Code sign-in, GitHub Desktop sign-in, `gh` authentication, and Git Credential Manager credentials.
-- GitHub sync should use an explicit repository URL, a completed `gh` authentication flow, or a token/repository setup explicitly provided by the user for this project.
+- Preferred sync path is VS Code's built-in Git/GitHub integration.
+- VS Code 1.135.0 on the work machine includes built-in `vscode.git` and `vscode.github`; `vscode.github` contributes `github.publish`.
+- Codex can open the folder in VS Code, but the user must approve any VS Code UI authentication or "Publish to GitHub" prompts.
+- Terminal fallback: use an explicit repository URL, a completed `gh` authentication flow, or a token/repository setup explicitly provided by the user for this project.

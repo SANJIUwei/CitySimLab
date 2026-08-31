@@ -1,30 +1,46 @@
 # CitySimLab
 
-这是一个模拟 Unity 开发流程的学习环境。它现在只提供工程骨架、运行入口、测试入口和文档位置，不包含城市模拟玩法实现。
+CitySimLab is a C# learning sandbox for building city-simulation systems with a Unity-style project workflow.
 
-你的目标是在这个环境里从 0 开始写自己的城市模拟系统。我只负责帮你搭台、陪你排错、引导你验证。
+The repository currently contains only the development environment scaffold: solution structure, a headless runner, a test project, documentation folders, and lightweight Unity concept mocks. Gameplay systems are intentionally not implemented yet.
 
-## 当前结构
+## Status
+
+- Language/runtime: C# / .NET
+- Unity dependency: none
+- Current focus: environment, verification, and learning workflow
+- Future direction: map simulation, zoning, traffic, economy, services, saves, and networking
+
+## Repository Layout
 
 ```text
-src/CitySim.Core        你写核心玩法规则的地方
-src/CitySim.Headless    命令行入口，用来在没有 Unity 的情况下运行实验
-src/CitySim.UnityMock   少量 Unity 生命周期/类型模拟，帮助理解 Unity 思维
-tests/CitySim.Tests     你给自己写验证用例的地方
-docs/                   学习计划、架构记录、踩坑笔记
-saves/                  未来存放存档或模拟快照
-tools/                  未来存放辅助脚本
+src/CitySim.Core        Core simulation code
+src/CitySim.Headless    Command-line runner for non-Unity experiments
+src/CitySim.UnityMock   Minimal Unity-like concepts for learning lifecycle patterns
+tests/CitySim.Tests     Automated tests
+docs/                   Design notes, learning notes, and Codex handoff docs
+saves/                  Placeholder for future saves or simulation snapshots
+tools/                  Utility scripts
 ```
 
-## 验证环境
+## Verification
 
 ```powershell
 cd E:\Myself\CitySimLab
+tools\verify.ps1
+```
+
+Equivalent manual commands:
+
+```powershell
 dotnet build
 dotnet test
 dotnet run --project src\CitySim.Headless
 ```
 
-## 第一条规则
+## Design Boundaries
 
-不要急着做“城市天际线”。先做第一个你能解释清楚的小东西。比如：一个格子、一条道路、一次时间推进。你来写，我来帮你验证和复盘。
+- Keep core simulation logic independent from Unity.
+- Use the headless runner to verify behavior before adding presentation layers.
+- Add tests for small rules as they are introduced.
+- Keep generated build outputs, secrets, and local machine state out of Git.

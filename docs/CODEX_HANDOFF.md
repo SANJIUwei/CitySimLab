@@ -4,7 +4,7 @@ This document is for Codex agents, not tutorial prose. Keep it compact and updat
 
 ## Current State
 
-- Last updated: 2026-08-31 12:13 +08:00
+- Last updated: 2026-08-31 13:36 +08:00
 - Last known location: work
 - Root: `E:\Myself\CitySimLab`
 - Branch: `main`
@@ -40,9 +40,14 @@ This document is for Codex agents, not tutorial prose. Keep it compact and updat
 
 ## Last Verification
 
-- `tools\verify.ps1`: passed on 2026-08-31 11:54 +08:00.
+- `tools\verify.ps1`: passed on 2026-08-31 13:36 +08:00.
 - `git ls-remote --heads origin main`: confirmed remote `main` on 2026-08-31 11:40 +08:00.
 - `git push`: passed on 2026-08-31 12:13 +08:00.
+
+## Latest Work
+
+- README was changed to a public-facing GitHub project overview.
+- Teaching prompts and Codex-specific workflow notes belong in `docs/` and `AGENTS.md`, not in the GitHub landing README.
 
 ## Next Recommended Action
 

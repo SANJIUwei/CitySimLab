@@ -14,8 +14,12 @@ Use VS Code's built-in Git/GitHub integration as the primary UI path. Do not use
 - Built-in extensions include `git`, `git-base`, `github`, `github-authentication`, and `microsoft-authentication`.
 - The built-in `github` extension contributes command `github.publish`.
 - The local `code` CLI does not expose a reliable `--command` option for invoking `github.publish` headlessly.
+- User completed VS Code/Git/GitHub binding and published the repository on 2026-08-31.
+- Remote is `https://github.com/SANJIUwei/CitySimLab.git`.
+- Local `main` tracks `origin/main`.
+- `git ls-remote --heads origin main` confirmed the remote branch.
 
-## Expected Publish Flow
+## First Publish Flow
 
 1. Open the repository in VS Code:
 
@@ -41,6 +45,14 @@ git branch -vv
 
 ```powershell
 git push -u origin main
+```
+
+The first publish is complete. Future sessions should usually use normal Git commands:
+
+```powershell
+git pull --ff-only
+tools\verify.ps1
+git push
 ```
 
 ## Fallbacks

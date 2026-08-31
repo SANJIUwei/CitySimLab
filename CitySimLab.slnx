@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CitySim.Core/CitySim.Core.csproj" />
+    <Project Path="src/CitySim.Headless/CitySim.Headless.csproj" />
+    <Project Path="src/CitySim.UnityMock/CitySim.UnityMock.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/CitySim.Tests/CitySim.Tests.csproj" />
+  </Folder>
+</Solution>

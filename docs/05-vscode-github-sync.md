@@ -1,64 +1,26 @@
 # VS Code GitHub Sync Notes
 
-This document is for Codex agents. It records the intended GitHub sync route for this project.
+This document is for Codex agents. Keep it short.
 
-## Rule
+## Current Setup
 
-Use VS Code's built-in Git/GitHub integration as the primary UI path. Do not use GitHub Desktop.
+- Remote: `https://github.com/SANJIUwei/CitySimLab.git`
+- Branch: `main`
+- Tracking: `main -> origin/main`
+- First publish was completed through VS Code's built-in Git/GitHub UI.
+- Future sync should normally use plain Git commands.
 
-## Verified Local Facts
-
-- VS Code is installed at `F:\Microsoft VS Code`.
-- `code --version` returned `1.135.0`.
-- Built-in extension directory exists under `F:\Microsoft VS Code\08d4889f9e\resources\app\extensions`.
-- Built-in extensions include `git`, `git-base`, `github`, `github-authentication`, and `microsoft-authentication`.
-- The built-in `github` extension contributes command `github.publish`.
-- The local `code` CLI does not expose a reliable `--command` option for invoking `github.publish` headlessly.
-- User completed VS Code/Git/GitHub binding and published the repository on 2026-08-31.
-- Remote is `https://github.com/SANJIUwei/CitySimLab.git`.
-- Local `main` tracks `origin/main`.
-- `git ls-remote --heads origin main` confirmed the remote branch.
-
-## First Publish Flow
-
-1. Open the repository in VS Code:
+## Normal Flow
 
 ```powershell
-code E:\Myself\CitySimLab
-```
-
-2. In VS Code, use one of:
-
-- Source Control panel: `Publish Branch` / `Publish to GitHub`
-- Command Palette: `GitHub: Publish to GitHub`
-
-3. User approves GitHub authentication and visibility. Default recommendation: private repository.
-4. After publish, Codex checks:
-
-```powershell
-git remote -v
-git status --short
-git branch -vv
-```
-
-5. If needed:
-
-```powershell
-git push -u origin main
-```
-
-The first publish is complete. Future sessions should usually use normal Git commands:
-
-```powershell
+git status --short --branch
 git pull --ff-only
 tools\verify.ps1
 git push
 ```
 
-## Fallbacks
+## Rules
 
-- Existing empty GitHub repo URL from the user.
-- Project-specific token from the user.
-- Working `gh auth login` flow.
-
-Do not reuse, open, or inspect GitHub Desktop.
+- Do not use GitHub Desktop.
+- Use VS Code Git/GitHub UI only if normal Git auth breaks.
+- If auth fails, ask the user for a project-specific auth method.

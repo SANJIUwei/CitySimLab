@@ -1,82 +1,65 @@
 # Codex Handoff
 
-This document is written for Codex, not for human-facing tutorial prose. Update it at the end of every work/home session before committing and pushing.
+This document is for Codex agents, not tutorial prose. Keep it compact and update it at the end of each work/home session.
 
-## Sync State
+## Current State
 
-- Last updated: 2026-08-31 11:40 +08:00
+- Last updated: 2026-08-31 11:59 +08:00
 - Last known location: work
-- Git branch: main
-- GitHub remote: `https://github.com/SANJIUwei/CitySimLab.git`
-- GitHub auth: VS Code/Git binding completed by user; do not use GitHub Desktop
-- Environment root: `E:\Myself\CitySimLab`
+- Root: `E:\Myself\CitySimLab`
+- Branch: `main`
+- Remote: `https://github.com/SANJIUwei/CitySimLab.git`
+- Tracking: `main -> origin/main`
+- Remote latest observed before compaction: `ac0192e9f8264e353f4c6f36f2b491cd695178e0`
+- Local pending push: compacted Git handoff docs; push is pending because current network cannot reach GitHub.
 
 ## Project Intent
 
-The user wants to learn by building the project themselves. Codex should provide scaffolding, debugging, verification, and learning guidance. Do not prebuild city simulation gameplay systems unless the user explicitly asks.
+- Beginner learning project for building a city simulation game from zero.
+- Codex should scaffold, debug, verify, and guide.
+- Do not implement gameplay systems unless the user explicitly asks.
+- Let the user write first when the task is gameplay learning.
 
-## Current Repository State
+## Environment
 
-- Solution exists: `CitySimLab.slnx`
-- Core library exists: `src/CitySim.Core`
-- Headless runner exists: `src/CitySim.Headless`
-- Unity mock helper library exists: `src/CitySim.UnityMock`
-- Test project exists: `tests/CitySim.Tests`
-- Documentation folder exists: `docs`
-- Save folder placeholder exists: `saves/.gitkeep`
+- Solution: `CitySimLab.slnx`
+- Core rules project: `src/CitySim.Core`
+- No-Unity runner: `src/CitySim.Headless`
+- Unity concept mock layer: `src/CitySim.UnityMock`
+- Tests: `tests/CitySim.Tests`
+- Docs: `docs`
+- Verification script: `tools\verify.ps1`
 
-## Latest Completed Work
+## Git Sync Rules
 
-- Created the C# solution and project skeleton under `E:\Myself\CitySimLab`.
-- Added a minimal smoke test so `dotnet test` confirms project references are wired.
-- Added a minimal headless runner that prints environment readiness only.
-- Added learning docs without implementing gameplay mechanics.
-- Removed earlier over-scoped gameplay prototype files after the user clarified that gameplay should remain their work.
-- Published the repository to GitHub through VS Code/Git, with local `main` tracking `origin/main`.
+- Do not use GitHub Desktop.
+- Start session: `git status --short --branch`, then `git pull --ff-only` if clean.
+- End session: update this file, run `tools\verify.ps1`, commit, then `git push`.
+- If normal Git auth fails, use VS Code built-in Git/GitHub UI or ask the user for a project-specific auth method.
+- Keep old auth failures out of this document unless they are still actionable.
 
-## Verification Log
+## Last Verification
 
-- `dotnet build --no-restore`: passed on 2026-08-31.
-- `dotnet test --no-build`: passed on 2026-08-31, 1 test.
-- `dotnet run --project src\CitySim.Headless`: passed on 2026-08-31.
-- `tools\verify.ps1`: passed on 2026-08-31 11:40 +08:00.
-- `git ls-remote --heads origin main`: passed on 2026-08-31 11:40 +08:00, remote `main` pointed at `c86baa0d8588ed5fabebbbf6fb4d98e132e3b759`.
+- `tools\verify.ps1`: passed on 2026-08-31 11:54 +08:00.
+- `git ls-remote --heads origin main`: confirmed remote `main` on 2026-08-31 11:40 +08:00.
+- `git push`: failed on 2026-08-31 11:59 +08:00 because this machine could not reach `github.com:443`; retry when network is available.
 
-## Open Blockers
+## Next Recommended Action
 
-- No current GitHub remote blocker.
-- Do not use GitHub Desktop for this project. The user clarified that GitHub Desktop belongs to company/work usage and must not be touched for CitySimLab.
-- GitHub CLI may still be unauthenticated; this is not a blocker as long as normal Git push/pull works through the configured VS Code/Git credential path.
+If the next session is sync/setup work:
 
-## Next Recommended Codex Action
+1. Pull with `git pull --ff-only`.
+2. Verify with `tools\verify.ps1`.
+3. Update this handoff only with current, actionable state.
 
-If the user asks to continue GitHub sync:
+If the next session is gameplay learning:
 
-1. Do not use GitHub Desktop.
-2. Run `git status --short --branch`.
-3. If working tree is clean, run `git pull --ff-only`.
-4. After changes are complete, run `tools\verify.ps1`.
-5. Commit intentional changes.
-6. Push with `git push`.
-7. Update this handoff with the latest commit hash and verification results.
+1. Ask the user to choose one tiny first object: coordinate, tile, or tick.
+2. Let the user attempt the code first.
+3. Help them add the smallest useful test.
+4. Keep implementation scope small.
 
-If the user asks for gameplay learning:
-
-1. Ask them to choose one tiny first object: coordinate, tile, or tick.
-2. Let them attempt the code first.
-3. Help them write the smallest useful test.
-4. Keep implementation scope deliberately small.
-
-## Files Codex Should Read First
-
-- `AGENTS.md`
-- `docs/CODEX_HANDOFF.md`
-- `README.md`
-- `docs/04-your-first-task.md`
-
-## Session Update Template
-
-Copy this block when closing a future session:
+## Close Template
 
 ```text
 Date:

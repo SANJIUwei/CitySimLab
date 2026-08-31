@@ -62,10 +62,8 @@ If verification passes and changes are intentional, commit with a short message.
 
 ## Sync Tool Notes
 
-- Do not use the user's GitHub Desktop for this project.
-- Do not open GitHub Desktop, inspect GitHub Desktop state, or rely on GitHub Desktop authentication.
-- Do not confuse VS Code sign-in, GitHub Desktop sign-in, `gh` authentication, and Git Credential Manager credentials.
-- Preferred sync path is VS Code's built-in Git/GitHub integration.
-- VS Code 1.135.0 on the work machine includes built-in `vscode.git` and `vscode.github`; `vscode.github` contributes `github.publish`.
-- Codex can open the folder in VS Code, but the user must approve any VS Code UI authentication or "Publish to GitHub" prompts.
-- Terminal fallback: use an explicit repository URL, a completed `gh` authentication flow, or a token/repository setup explicitly provided by the user for this project.
+- Remote: `https://github.com/SANJIUwei/CitySimLab.git`.
+- Normal sync loop: `git pull --ff-only` at start, `tools\verify.ps1`, commit, then `git push` at close.
+- VS Code's built-in Git/GitHub UI was used for first publish/auth. Use it only if normal Git auth breaks.
+- Do not use, open, inspect, or rely on the user's GitHub Desktop for this project.
+- If GitHub auth fails, stop and ask the user for a project-specific auth method.

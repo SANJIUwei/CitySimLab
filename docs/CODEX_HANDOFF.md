@@ -4,11 +4,11 @@ This document is written for Codex, not for human-facing tutorial prose. Update 
 
 ## Sync State
 
-- Last updated: 2026-08-31
+- Last updated: 2026-08-31 11:09 +08:00
 - Last known location: work
 - Git branch: main
 - GitHub remote: not configured
-- GitHub auth: GitHub CLI installed, not logged in on the work machine
+- GitHub auth: VS Code is reportedly signed in, but `gh` and Git Credential Manager cannot currently reuse that login
 - Environment root: `E:\Myself\CitySimLab`
 
 ## Project Intent
@@ -43,17 +43,23 @@ The user wants to learn by building the project themselves. Codex should provide
 
 - GitHub remote is not configured.
 - GitHub CLI is installed but not authenticated.
-- Need the user to either log in with `gh auth login` or provide a GitHub repository URL/token flow they prefer.
+- `gh auth login --web` was attempted. It displayed a device code, then failed while exchanging the OAuth token because the connection to GitHub timed out.
+- `git credential-manager github list` returned no reusable GitHub account.
+- `code --list-extensions --show-versions` shows C# / Unity / EditorConfig extensions only; no command-line-accessible GitHub publish extension was found.
+- VS Code UI may still be able to publish using its internal GitHub authentication, but Codex cannot safely read or reuse that token directly.
+- Need either a completed VS Code UI "Publish to GitHub" action, an existing GitHub repository URL, or a working `gh auth login` / token flow.
 
 ## Next Recommended Codex Action
 
 If the user asks to finish GitHub sync:
 
-1. Confirm whether to create a new GitHub repo or connect an existing one.
-2. Configure `origin`.
-3. Push `main`.
-4. Re-run clone/pull instructions mentally for a second machine.
-5. Update this handoff with the remote URL and latest commit hash.
+1. First try the VS Code UI path if the user is present: open `E:\Myself\CitySimLab` in VS Code, Source Control, Publish Branch / Publish to GitHub, choose private unless the user says otherwise.
+2. If VS Code creates the repo, return to terminal and run `git remote -v` plus `git push -u origin main` if needed.
+3. If VS Code UI cannot publish, ask for an existing GitHub repository URL or ask the user to complete `gh auth login`.
+4. Configure `origin`.
+5. Push `main`.
+6. Re-run clone/pull instructions mentally for a second machine.
+7. Update this handoff with the remote URL and latest commit hash.
 
 If the user asks for gameplay learning:
 

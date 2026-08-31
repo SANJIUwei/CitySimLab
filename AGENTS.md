@@ -62,7 +62,7 @@ If verification passes and changes are intentional, commit with a short message.
 
 ## Sync Tool Notes
 
-- On the work/company machine, the intended GitHub UI tool is GitHub Desktop.
-- Do not confuse VS Code sign-in with GitHub Desktop sign-in.
-- Do not assume `gh` authentication, Git Credential Manager credentials, VS Code GitHub auth, and GitHub Desktop auth are interchangeable.
-- Codex may open the repository in GitHub Desktop, but the user must approve any GitHub Desktop UI authentication or publish prompts.
+- Do not use the user's GitHub Desktop for this project.
+- Do not open GitHub Desktop, inspect GitHub Desktop state, or rely on GitHub Desktop authentication.
+- Do not confuse VS Code sign-in, GitHub Desktop sign-in, `gh` authentication, and Git Credential Manager credentials.
+- GitHub sync should use an explicit repository URL, a completed `gh` authentication flow, or a token/repository setup explicitly provided by the user for this project.

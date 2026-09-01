@@ -4,13 +4,13 @@ This document is for Codex agents, not tutorial prose. Keep it compact and updat
 
 ## Current State
 
-- Last updated: 2026-09-01 16:24 +08:00
+- Last updated: 2026-09-01 16:30 +08:00
 - Last known location: work
 - Root: `E:\Myself\CitySimLab`
 - Branch: `main`
 - Remote: `https://github.com/SANJIUwei/CitySimLab.git`
 - Tracking: `main -> origin/main`
-- Sync status: pending commit/push for 2026-09-01 design notes after successful local verification
+- Sync status: clean and pushed to `origin/main` at session close; run `git status --short --branch` after pull to confirm on the next machine
 - Working tree should be clean after each session close
 
 ## Project Intent
@@ -48,6 +48,7 @@ This document is for Codex agents, not tutorial prose. Keep it compact and updat
 - `git rebase origin/main`: passed on 2026-09-01 16:17 +08:00; preserved local `WorldPosition.cs`.
 - Direct `tools\verify.ps1`: blocked on 2026-09-01 by PowerShell execution policy.
 - `powershell -NoProfile -ExecutionPolicy Bypass -File tools\verify.ps1`: passed on 2026-09-01 16:22 +08:00; build passed with 0 warnings/0 errors, tests passed 1/1, headless environment check passed.
+- `git push origin main`: passed on 2026-09-01 16:28 +08:00 for design notes update.
 
 ## Latest Work
 

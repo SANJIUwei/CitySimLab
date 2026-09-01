@@ -8,6 +8,17 @@ This document is for Codex agents. It is a teaching plan, not an implementation 
 - Every lesson must have objective evidence: a local file, a command result, an official reference, or observed user output.
 - Prefer questions and tiny exercises over finished answers.
 - Never prebuild the city simulation for the user.
+- This is a private practice project. Do not invoke game-development skills or generate gameplay code unless the user explicitly requests that kind of help in the current turn.
+
+## Current Design Track
+
+Focus the next teaching discussions on road/building separation:
+
+- Building placement uses world coordinates, not a fixed road grid.
+- Roads should be represented as graph data for routing, while visual road geometry and movement detail can be richer.
+- Building entrances should attach to road segments through a local relationship instead of turning every building into a permanent global routing node.
+- Global pathfinding can solve the road-network route; deterministic local approach logic can solve the final road-to-building distance.
+- Ask the user to explain these relationships before asking them to code.
 
 ## Evidence Map
 
@@ -15,12 +26,16 @@ This document is for Codex agents. It is a teaching plan, not an implementation 
 |---|---|---|
 | `docs/00-learning-contract.md` | The project is learning-first and error-driven. | Keep tasks small; make the user predict and observe. |
 | `docs/02-architecture.md` | Core rules stay independent from Unity. | Put guidance around `CitySim.Core`, `CitySim.Headless`, and tests. |
+| `docs/design-notes/2026-09-01-road-network-and-building-access.md` | User's current road graph and building access reasoning. | Preserve continuity; use it for questions, not immediate implementation. |
 | `tools/verify.ps1` | The repo has a repeatable build/test/run check. | Use it as the default session-close verification. |
 | Microsoft .NET CLI docs for `dotnet build`, `dotnet test`, and `dotnet run` | Build, test, and command-line run are standard .NET workflows. | Teach compile/test/run feedback loops before game complexity. |
 | Unity Manual: event function execution order | Unity gameplay depends on lifecycle timing such as initialization and update order. | Teach tick/update concepts in headless C# before real Unity scenes. |
 | Unity Manual: assembly definitions | Unity projects can separate code into assemblies. | Preserve the current split between core rules and Unity-facing layers. |
 | Unity Manual: ScriptableObject | Authored configuration can later live outside runtime scene objects. | Delay config assets until the user has hardcoded rules they understand. |
 | Cities: Skylines user manual | Roads, zoning, buildings, services, budgets, and transport are real city-builder system categories. | Use these as curriculum categories, not as copied design answers. |
+| TM:PE network documentation | Cities: Skylines-style networks can be discussed as nodes, segments, and lanes. | Use the vocabulary carefully: nodes are not roads; segments connect nodes; lanes carry movement. |
+| OSRM nearest service and GraphHopper map matching | Real routing systems often snap free coordinates to a road network before routing. | Use as analogy for building entrance to road attachment. |
+| Valhalla routing documentation | Large routing systems use tiled/hierarchical data structures. | Mention as future scaling inspiration only; do not teach it before the user can model one segment. |
 | Unity Netcode for GameObjects docs | Multiplayer introduces ownership/authority concerns. | Defer networking until simulation commands, state, and replay checks exist. |
 
 ## Curriculum Shape
@@ -63,9 +78,16 @@ This document is for Codex agents. It is a teaching plan, not an implementation 
 ### 5. Roads And Connectivity
 
 - User task: introduce roads as data, then ask one connectivity question.
-- Codex role: guide toward adjacency before pathfinding.
+- Codex role: guide toward adjacency and road attachment before pathfinding.
 - Evidence: city-builder manuals treat roads as foundational infrastructure; local tests show road queries.
-- Exit check: user can answer "is this tile connected enough for the next rule?" without full traffic simulation.
+- Exit check: user can distinguish road node, road segment, building entrance, and attachment point.
+
+### 5A. Building Entrance To Road Attachment
+
+- User task: describe how one building entrance attaches to one nearby road segment.
+- Codex role: ask for the user's expected data before code; review the reasoning; do not provide a finished system.
+- Evidence: `docs/design-notes/2026-09-01-road-network-and-building-access.md`, TM:PE nodes/segments/lanes vocabulary, OSRM/GraphHopper coordinate-to-road matching analogies.
+- Exit check: user can explain why the global road graph should not permanently include every building by default.
 
 ### 6. Zoning And Growth
 
@@ -84,7 +106,7 @@ This document is for Codex agents. It is a teaching plan, not an implementation 
 ### 8. Traffic And Pathfinding
 
 - User task: only after roads and map are stable, attempt a tiny route query.
-- Codex role: start with BFS or simple graph reasoning; delay A* until the user can explain the simpler version.
+- Codex role: start with BFS or simple graph reasoning; delay A* until the user can explain the simpler version. Keep the "last 100 meters" as local logic, not global graph bloat.
 - Evidence: local graph tests; pathfinding is a later system because it depends on map and roads.
 - Exit check: user can explain nodes, edges, start, goal, and no-path behavior.
 
@@ -116,4 +138,9 @@ This document is for Codex agents. It is a teaching plan, not an implementation 
 - Unity assembly definitions: https://docs.unity.cn/Manual/ScriptCompilationAssemblyDefinitionFiles.html
 - Unity ScriptableObject: https://docs.unity.cn/Manual/class-ScriptableObject.html
 - Cities: Skylines user manual: https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/255710/manuals/CitiesSkylines-UserManual.pdf
+- TM:PE nodes, segments, and lanes: https://doc.tmpe.me/nodes-segments-lanes.html
+- Colossal Order traffic AI diary: https://colossalorder.fi/news/development-diary-2-traffic-ai/
+- OSRM nearest service: https://project-osrm.org/docs/v5.5.1/api/#nearest-service
+- GraphHopper map matching: https://github.com/graphhopper/graphhopper/tree/master/map-matching
+- Valhalla routing docs: https://valhalla.github.io/valhalla/
 - Unity Netcode ownership and authority: https://docs.unity.cn/Packages/com.unity.netcode.gameobjects%402.13/manual/terms-concepts/ownership.html

@@ -4,13 +4,13 @@ This document is for Codex agents, not tutorial prose. Keep it compact and updat
 
 ## Current State
 
-- Last updated: 2026-08-31 14:04 +08:00
+- Last updated: 2026-09-01 16:24 +08:00
 - Last known location: work
 - Root: `E:\Myself\CitySimLab`
 - Branch: `main`
 - Remote: `https://github.com/SANJIUwei/CitySimLab.git`
 - Tracking: `main -> origin/main`
-- Sync status: local branch is ahead of `origin/main` by 1 commit because GitHub push failed after adding the teaching plan
+- Sync status: pending commit/push for 2026-09-01 design notes after successful local verification
 - Working tree should be clean after each session close
 
 ## Project Intent
@@ -28,6 +28,7 @@ This document is for Codex agents, not tutorial prose. Keep it compact and updat
 - Unity concept mock layer: `src/CitySim.UnityMock`
 - Tests: `tests/CitySim.Tests`
 - Docs: `docs`
+- Design notes: `docs/design-notes`
 - Verification script: `tools\verify.ps1`
 - Codex teaching plan: `docs/CODEX_TEACHING_PLAN.md`
 
@@ -44,13 +45,17 @@ This document is for Codex agents, not tutorial prose. Keep it compact and updat
 - `tools\verify.ps1`: passed on 2026-08-31 14:01 +08:00.
 - `git ls-remote --heads origin main`: confirmed remote `main` on 2026-08-31 11:40 +08:00.
 - `git push`: passed on 2026-08-31 12:13 +08:00.
-- `git push`: failed on 2026-08-31 14:04 +08:00 because this machine could not reach `github.com:443`; retry when network is available.
+- `git rebase origin/main`: passed on 2026-09-01 16:17 +08:00; preserved local `WorldPosition.cs`.
+- Direct `tools\verify.ps1`: blocked on 2026-09-01 by PowerShell execution policy.
+- `powershell -NoProfile -ExecutionPolicy Bypass -File tools\verify.ps1`: passed on 2026-09-01 16:22 +08:00; build passed with 0 warnings/0 errors, tests passed 1/1, headless environment check passed.
 
 ## Latest Work
 
-- README was changed to a public-facing GitHub project overview.
-- Teaching prompts and Codex-specific workflow notes belong in `docs/` and `AGENTS.md`, not in the GitHub landing README.
-- Added a Codex-only teaching plan in `docs/CODEX_TEACHING_PLAN.md`; it is evidence-based and must not be treated as permission to implement gameplay.
+- Added `docs/design-notes/` for Codex-only design continuity.
+- Recorded the user's 2026-09-01 reasoning about road graphs, nodes/segments, free building world positions, road attachments, and the "last 100 meters" local approach.
+- Updated `docs/CODEX_TEACHING_PLAN.md` so the near-term teaching track focuses on building entrance to road attachment, not full gameplay implementation.
+- Reinforced in `AGENTS.md` that this is a private practice project: do not use game-development skills or write gameplay code unless the user explicitly asks in the current turn.
+- Local `src/CitySim.Core/WorldPosition.cs` exists and appears to represent the user's coordinate-practice thread; do not modify it unless asked.
 
 ## Next Recommended Action
 
@@ -62,10 +67,10 @@ If the next session is sync/setup work:
 
 If the next session is gameplay learning:
 
-1. Ask the user to choose one tiny first object: coordinate, tile, or tick.
-2. Let the user attempt the code first.
-3. Help them add the smallest useful test.
-4. Keep implementation scope small.
+1. Read `docs/design-notes/2026-09-01-road-network-and-building-access.md`.
+2. Ask the user to explain building position, building entrance, road segment, and road attachment in their own words.
+3. If the user asks to code, guide them toward one tiny calculation: nearest point on a single segment and attachment `t`.
+4. Let the user attempt the code first; Codex reviews, debugs, and verifies.
 
 ## Close Template
 

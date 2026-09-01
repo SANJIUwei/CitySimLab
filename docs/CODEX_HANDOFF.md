@@ -4,13 +4,13 @@ This document is for Codex agents, not tutorial prose. Keep it compact and updat
 
 ## Current State
 
-- Last updated: 2026-09-01 18:37 +08:00
-- Last known location: work
-- Root: `E:\Myself\CitySimLab`
+- Last updated: 2026-09-02 01:01 +08:00
+- Last known location: home
+- Root: `E:\code\code home\city`
 - Branch: `main`
 - Remote: `https://github.com/SANJIUwei/CitySimLab.git`
 - Tracking: `main -> origin/main`
-- Sync status: clean and pushed to `origin/main` at session close; run `git status --short --branch` after pull to confirm on the next machine
+- Sync status: home environment synchronized and committed locally; pushing to `origin/main` is blocked by GitHub authentication, so the company environment can pull this handoff after project-account authentication is fixed
 - Working tree should be clean after each session close
 
 ## Project Intent
@@ -50,6 +50,10 @@ This document is for Codex agents, not tutorial prose. Keep it compact and updat
 - `powershell -NoProfile -ExecutionPolicy Bypass -File tools\verify.ps1`: passed on 2026-09-01 16:22 +08:00; build passed with 0 warnings/0 errors, tests passed 1/1, headless environment check passed.
 - `powershell -NoProfile -ExecutionPolicy Bypass -File tools\verify.ps1`: passed on 2026-09-01 18:36 +08:00 after converting design notes to Chinese; build passed with 0 warnings/0 errors, tests passed 1/1, headless environment check passed.
 - `git push origin main`: passed on 2026-09-01 16:28 +08:00 for design notes update.
+- `git pull --ff-only`: passed on 2026-09-02 at home; repository was already up to date.
+- `powershell -NoProfile -ExecutionPolicy Bypass -File tools\verify.ps1`: passed on 2026-09-02 at home; build passed with 0 warnings/0 errors, tests passed 1/1, and the headless runner completed successfully.
+- VS Code opened `E:\code\code home\city`; source control is available through the built-in Git panel.
+- `git push origin main`: blocked on 2026-09-02 with GitHub HTTP 403; credential account `HDyouyita` does not have write permission to `SANJIUwei/CitySimLab`.
 
 ## Latest Work
 
@@ -59,6 +63,8 @@ This document is for Codex agents, not tutorial prose. Keep it compact and updat
 - Reinforced in `AGENTS.md` that this is a private practice project: do not use game-development skills or write gameplay code unless the user explicitly asks in the current turn.
 - User requested that design-thinking notes be written in Chinese because English is tiring to read; `docs/design-notes/` was converted to Chinese and future user-thought notes should default to Simplified Chinese.
 - Local `src/CitySim.Core/WorldPosition.cs` exists and appears to represent the user's coordinate-practice thread; do not modify it unless asked.
+- 家里环境已完成同步：仓库位于 `E:\code\code home\city`，分支为 `main`，已跟踪 `origin/main`；本次仅更新交接日志，未修改玩法代码。
+- 家里已完成构建、测试和 Headless 运行验证，并创建本地进度提交；远程推送等待 GitHub 项目账号认证完成后再执行，当前没有玩法代码改动。
 
 ## Next Recommended Action
 

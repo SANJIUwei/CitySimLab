@@ -1,15 +1,16 @@
-# Design Notes For Codex
+# 给 Codex 的设计思考记录
 
-This folder records the user's design reasoning. It is not a feature backlog and not permission to implement gameplay.
+这个文件夹专门记录用户自己的设计思考。它不是功能清单，也不是允许 Codex 直接实现玩法的授权。
 
-## How Codex Should Use These Notes
+## Codex 使用规则
 
-- Read the newest relevant note before design discussions.
-- Treat notes as continuity anchors across work/home sessions.
-- Preserve the user's uncertainty and hypotheses; do not polish them into finished architecture too early.
-- When the next step is educational, ask the user to explain or test one small idea before suggesting code.
-- Update this folder at session close when the user has made important design observations.
+- 讨论设计前，先读最新的相关笔记。
+- 把这些笔记当成公司/家里两个环境之间的连续记忆。
+- 保留用户的疑惑、假设和推理过程，不要过早整理成“最终架构”。
+- 如果下一步是学习任务，先让用户解释或尝试一个小问题，再建议代码方向。
+- 用户有重要设计观察时，在会话结束前更新这个文件夹。
+- 记录用户思考时默认使用中文，除非用户明确要求英文。
 
-## Index
+## 索引
 
-- `2026-09-01-road-network-and-building-access.md`: road graph, building entrances, road attachments, and the "last 100 meters" local approach idea.
+- `2026-09-01-road-network-and-building-access.md`：路网图、建筑入口、道路接入关系，以及“最后 100 米”的局部接近思路。

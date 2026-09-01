@@ -1,67 +1,67 @@
-# Road Network And Building Access
+# 路网与建筑接入关系
 
-Date: 2026-09-01
-Audience: Codex agents only
-Status: design reasoning, not implementation permission
+日期：2026-09-01
+阅读对象：Codex
+状态：设计思考记录，不是实现授权
 
-## Session Context
+## 本次上下文
 
-The user paused implementation to reason about how a Cities: Skylines-like simulation should represent roads, buildings, and pathfinding. The user wants to learn by thinking, writing, making mistakes, and iterating. Do not convert this note directly into code unless the user explicitly asks.
+用户暂停了具体实现，转而分析类似《城市：天际线》的城市模拟游戏应该怎样表示道路、建筑和寻路。用户希望通过思考、亲自编写、犯错和迭代来学习。除非用户明确要求，否则 Codex 不要把这篇笔记直接变成代码。
 
-## User Observations
+## 用户观察
 
-- Buildings should use world coordinates and should not be forced onto road-grid cells.
-- Some Cities: Skylines 1 mods allow buildings to be placed outside normal road/zoning constraints, suggesting placement freedom and road access can be separate concerns.
-- Roads appear to have nodes and segments; even a straight road may be represented by multiple shorter segments.
-- The visible road is not the same as the pathfinding structure. The road network mainly serves navigation, service reachability, traffic, and simulation.
-- If every building became a permanent pathfinding node, the graph could grow with building count faster than the road network grows.
-- If pathfinding only targets road nodes, the final approach to a building could look too simple or unnatural.
-- The user proposed solving the "last 100 meters" with deterministic local logic after global road pathfinding reaches the target-side road area.
+- 建筑应该使用世界坐标，不应该被强制绑定到道路网格上。
+- 《城市：天际线 1》的部分模组可以让建筑脱离普通道路/分区限制进行放置，这说明“自由摆放”和“道路接入”可以是两件事。
+- 道路看起来应该有节点和分段；即使是一条笔直的长路，也可能由多个较短分段组成。
+- 玩家看到的道路，不等于寻路系统使用的数据结构。路网主要服务导航、服务可达性、交通和模拟。
+- 如果每栋建筑都变成永久寻路节点，寻路图规模可能会随着建筑数量快速膨胀，而道路规模增长未必这么快。
+- 如果寻路只到道路节点，建筑最后一小段的接近过程又可能显得过于粗糙，缺少细节说服力。
+- 用户提出：全局路网仍使用常规寻路；到达目标附近道路区域后，用一套确定性的局部逻辑解决“最后 100 米”。
 
-## Current Working Hypothesis
+## 当前工作假设
 
-Separate the simulation into at least three layers:
+暂时把模拟拆成三层：
 
-1. Road graph layer: stable nodes and segments used for global routing.
-2. Building access layer: building entrances attach to road segments without forcing every building into the permanent road graph.
-3. Local approach layer: after global routing, movement follows the target segment to the attachment point, then follows the local connection into the building.
+1. 路网图层：稳定的道路节点和道路分段，用于全局寻路。
+2. 建筑接入层：建筑入口挂接到道路分段上，而不是把每栋建筑都塞进永久路网图。
+3. 局部接近层：全局寻路完成后，移动逻辑沿目标道路分段到达挂接点，再从挂接点进入建筑。
 
-This preserves detail without making the global routing graph scale directly with building count.
+这样既能保留细节，又能避免全局寻路图直接按建筑数量膨胀。
 
-## Terms To Preserve
+## 需要保留的概念
 
-- `Building.worldPosition`: the building's actual position in world space.
-- `BuildingEntrance`: a point on or near the building where agents enter or exit.
-- `RoadNode`: a stable graph node, usually road endpoints or intersections.
-- `RoadSegment`: a connection between road nodes; may have geometry more detailed than a straight line.
-- `RoadAttachment`: a cached relationship from a building entrance to a specific road segment.
-- `t`: a normalized position along a road segment, where 0 is the start node and 1 is the end node.
-- `Last 100 meters`: local approach logic from the road graph to the building entrance.
+- `Building.worldPosition`：建筑在世界空间里的真实位置。
+- `BuildingEntrance`：建筑附近或建筑上的入口点，行人、车辆或服务从这里进出。
+- `RoadNode`：稳定的道路图节点，通常是道路端点、路口或关键连接点。
+- `RoadSegment`：连接两个道路节点的一段道路；它的几何形状可以比一条直线更复杂。
+- `RoadAttachment`：建筑入口与某条道路分段之间的缓存关系。
+- `t`：道路分段上的归一化位置，`0` 表示起点，`1` 表示终点。
+- `最后 100 米`：从路网图到建筑入口之间的局部接近逻辑。
 
-## Reasoning To Revisit
+## 之后要反复检查的推理
 
-- Circle/radius detection is useful as a broad-phase query: find candidate roads near a building entrance.
-- Precise connection should use nearest point on road segment or lane, not just circle intersection.
-- Road segments should not be split for every building by default; permanent splitting may create too many graph nodes.
-- A building attachment can store segment plus `t`; local logic can compute distance from either segment end to the attachment point.
-- Global routing can ignore most buildings most of the time; only origin and destination buildings need temporary/local access handling during a route query.
+- 圆形/半径检测适合做粗筛：先找建筑入口附近有哪些候选道路。
+- 精确接入不应该只看圆和道路有没有相交，而应该计算入口到道路分段或车道的最近点。
+- 默认不要为了每个建筑接入点去切分道路分段；永久切分可能制造太多图节点。
+- 建筑接入关系可以保存 `segment + t`；局部逻辑可以根据 `t` 计算从分段起点或终点到接入点的距离。
+- 全局寻路大多数时候可以忽略大部分建筑；一次路线查询里通常只需要处理起点建筑和终点建筑的局部接入。
 
-## External Evidence Anchors
+## 外部证据锚点
 
-- Traffic Manager: President Edition documentation describes Cities: Skylines networks in terms of nodes, segments, and lanes: https://doc.tmpe.me/nodes-segments-lanes.html
-- Colossal Order's Cities: Skylines II traffic AI diary contrasts older proximity-based service/path decisions with more route-cost-aware behavior: https://colossalorder.fi/news/development-diary-2-traffic-ai/
-- OSRM exposes `nearest` to snap coordinates to the street network, a useful analogy for building entrance to road attachment: https://project-osrm.org/docs/v5.5.1/api/#nearest-service
-- GraphHopper includes map matching, another example of matching free coordinates or traces to road-network geometry: https://github.com/graphhopper/graphhopper/tree/master/map-matching
-- Valhalla documents tiled hierarchical routing data, relevant later when the project needs large-city scaling: https://valhalla.github.io/valhalla/
+- Traffic Manager: President Edition 文档用 nodes、segments、lanes 描述《城市：天际线》式网络结构：https://doc.tmpe.me/nodes-segments-lanes.html
+- Colossal Order 的《城市：天际线 2》交通 AI 日志提到，旧式基于直线距离的服务/路径选择会带来不合理结果，后续系统更重视路线成本：https://colossalorder.fi/news/development-diary-2-traffic-ai/
+- OSRM 的 `nearest` 服务会把任意坐标吸附到街道路网，可作为“建筑入口吸附到道路”的类比：https://project-osrm.org/docs/v5.5.1/api/#nearest-service
+- GraphHopper 的 map matching 也是把自由坐标或轨迹匹配到路网几何上的例子：https://github.com/graphhopper/graphhopper/tree/master/map-matching
+- Valhalla 使用分块和层级化路由数据，未来做大城市规模时可以参考：https://valhalla.github.io/valhalla/
 
-## Teaching Guidance
+## 教学引导
 
-Good next prompt:
+合适的下一个问题：
 
-> Explain, in your own words, the difference between building position, building entrance, road segment, and road attachment.
+> 用你自己的话解释：建筑位置、建筑入口、道路分段、道路接入关系分别是什么？
 
-Good first exercise, if the user asks to write code:
+如果用户明确要求开始写代码，合适的第一个练习是：
 
-> Given one road segment from A to B and one building entrance point, calculate the nearest point on the segment and the attachment `t`.
+> 已知一条从 A 到 B 的道路分段，以及一个建筑入口点，计算入口到这条分段的最近点和接入位置 `t`。
 
-Do not start with A*, server sync, traffic agents, zoning growth, or full city simulation. The educational target is to make one relationship clear enough that the user can explain it.
+不要从 A*、服务器同步、交通 agent、分区生长或完整城市模拟开始。当前教学目标是让用户把一个关系想清楚，并能自己解释出来。

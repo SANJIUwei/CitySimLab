@@ -9,6 +9,7 @@ This document is for Codex agents. It is a teaching plan, not an implementation 
 - Prefer questions and tiny exercises over finished answers.
 - Never prebuild the city simulation for the user.
 - This is a private practice project. Do not invoke game-development skills or generate gameplay code unless the user explicitly requests that kind of help in the current turn.
+- Record the user's own design thoughts in Simplified Chinese by default.
 
 ## Current Design Track
 

@@ -46,6 +46,7 @@ If verification passes and changes are intentional, commit with a short message.
 - When fixing an error, explain the smallest cause and the smallest verification.
 - Keep code changes tiny unless the user asks for a larger setup step.
 - For this private practice project, do not use game-development skills or write gameplay code unless the user explicitly asks in the current turn.
+- Record the user's design thoughts in Simplified Chinese by default; the user finds English tiring to read.
 
 ## Architecture Rules
 

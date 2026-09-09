@@ -1,6 +1,6 @@
-# Codex Operating Notes
+# AI Operating Notes
 
-This file is for Codex agents working on CitySimLab. Treat it as the first file to read after cloning or pulling the repo.
+This file is for AI working on CitySimLab. Treat it as the first file to read after cloning or pulling the repo.
 
 ## Human Goal
 
@@ -12,22 +12,22 @@ Do not implement gameplay systems unless the user explicitly asks for implementa
 
 1. Run `git status --short`.
 2. If a remote exists, run `git pull --ff-only` before editing.
-3. Read `docs/CODEX_HANDOFF.md`.
-4. For teaching tasks, read `docs/CODEX_TEACHING_PLAN.md`.
+3. Read `docs/AI_HANDOFF.md`.
+4. For teaching tasks, read `docs/AI_TEACHING_PLAN.md`.
 5. For design-continuity tasks, read the relevant note under `docs/design-notes/`.
 6. Read only the docs or source files needed for the current request.
 7. Verify the environment with `tools\verify.ps1` when practical.
 
 ## Session Close Protocol
 
-Before ending a work session, update `docs/CODEX_HANDOFF.md` with:
+Before ending a work session, update `docs/AI_HANDOFF.md` with:
 
 - current location context, if known: work, home, or unknown
 - latest completed work
 - files changed
 - commands run and results
 - known blockers
-- recommended next step for the next Codex session
+- recommended next step for the next AI session
 
 Then run:
 
@@ -36,11 +36,12 @@ tools\verify.ps1
 git status --short
 ```
 
-If verification passes and changes are intentional, commit with a short message. If GitHub remote/auth is available, push. If not, leave the repo in a clean local committed state and record the blocker in `docs/CODEX_HANDOFF.md`.
+If verification passes and changes are intentional, commit with a short message. If GitHub remote/auth is available, push. If not, leave the repo in a clean local committed state and record the blocker in `docs/AI_HANDOFF.md`.
 
 ## Teaching Style
 
 - Let the user write first when the task is gameplay learning.
+- The user writes feature code only (`src/CitySim.Core`, `src/CitySim.Headless`). AI writes and runs tests in `tests/CitySim.Tests` in sync; do not ask the user to write tests.
 - Give hints before full answers.
 - Ask the user to predict behavior before running experiments.
 - When fixing an error, explain the smallest cause and the smallest verification.
@@ -68,6 +69,6 @@ If verification passes and changes are intentional, commit with a short message.
 
 - Remote: `https://github.com/SANJIUwei/CitySimLab.git`.
 - Normal sync loop: `git pull --ff-only` at start, `tools\verify.ps1`, commit, then `git push` at close.
-- VS Code's built-in Git/GitHub UI was used for first publish/auth. Use it only if normal Git auth breaks.
-- Do not use, open, inspect, or rely on the user's GitHub Desktop for this project.
-- If GitHub auth fails, stop and ask the user for a project-specific auth method.
+- Git may be managed with plain Git commands, VS Code's built-in Git/GitHub UI, or GitHub Desktop.
+- Prefer the method that already has write access to `SANJIUwei/CitySimLab`.
+- If GitHub auth fails, try another allowed Git client, then ask the user for a project-specific auth method.

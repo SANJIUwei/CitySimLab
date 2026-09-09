@@ -1,10 +1,11 @@
-# Codex Teaching Plan
+# AI Teaching Plan
 
-This document is for Codex agents. It is a teaching plan, not an implementation plan. Do not turn any item here into code unless the user explicitly asks.
+This document is for AI. It is a teaching plan, not an implementation plan. Do not turn any item here into code unless the user explicitly asks.
 
 ## Operating Rule
 
-- User writes gameplay first; Codex guides, reviews, debugs, tests, and explains.
+- User writes gameplay first; AI guides, reviews, debugs, tests, and explains.
+- Tests are AI's job: when the user changes feature code, write or update `tests/CitySim.Tests`, add short comments, and run them. Do not ask the user to write tests.
 - Every lesson must have objective evidence: a local file, a command result, an official reference, or observed user output.
 - Prefer questions and tiny exercises over finished answers.
 - Never prebuild the city simulation for the user.
@@ -23,7 +24,7 @@ Focus the next teaching discussions on road/building separation:
 
 ## Evidence Map
 
-| Evidence | What it supports | Local action for Codex |
+| Evidence | What it supports | Local action for AI |
 |---|---|---|
 | `docs/00-learning-contract.md` | The project is learning-first and error-driven. | Keep tasks small; make the user predict and observe. |
 | `docs/02-architecture.md` | Core rules stay independent from Unity. | Put guidance around `CitySim.Core`, `CitySim.Headless`, and tests. |
@@ -44,95 +45,95 @@ Focus the next teaching discussions on road/building separation:
 ### 0. Environment Literacy
 
 - User task: run the project and explain what each project folder is for.
-- Codex role: help with command errors only.
+- AI role: help with command errors only.
 - Evidence: `README.md`, `tools/verify.ps1`, successful `dotnet build/test/run`.
 - Exit check: user can run verification and identify where core code, tests, docs, and runner live.
 
 ### 1. First Data Object
 
 - User task: choose one tiny object: coordinate, tile, or tick.
-- Codex role: ask for expected behavior before code; help write one test after the user's attempt.
+- AI role: ask for expected behavior before code; after the user's attempt, AI writes the matching test and runs it.
 - Evidence: local test result and user-written source file.
 - Exit check: one user-authored object compiles and has one passing test.
 
 ### 2. First Rule
 
 - User task: add one rule to the chosen object.
-- Codex role: force input/output clarity; review edge cases without providing a full system.
+- AI role: force input/output clarity; review edge cases without providing a full system.
 - Evidence: failing test before fix or explicit prediction before run.
 - Exit check: user can explain why the rule passes and what input would break it.
 
 ### 3. Headless Observation
 
 - User task: print a small experiment from `CitySim.Headless`.
-- Codex role: keep output boring and readable; no UI work.
+- AI role: keep output boring and readable; no UI work.
 - Evidence: command-line output captured by `dotnet run`.
 - Exit check: user can compare predicted output with actual output.
 
 ### 4. Map Representation
 
 - User task: represent a small map using the objects already learned.
-- Codex role: ask about bounds, indexing, and invalid positions; avoid giving a finished map API.
+- AI role: ask about bounds, indexing, and invalid positions; avoid giving a finished map API.
 - Evidence: tests for inside/outside positions and a simple headless print.
 - Exit check: user can describe how data is stored and why one indexing choice was made.
 
 ### 5. Roads And Connectivity
 
 - User task: introduce roads as data, then ask one connectivity question.
-- Codex role: guide toward adjacency and road attachment before pathfinding.
+- AI role: guide toward adjacency and road attachment before pathfinding.
 - Evidence: city-builder manuals treat roads as foundational infrastructure; local tests show road queries.
 - Exit check: user can distinguish road node, road segment, building entrance, and attachment point.
 
 ### 5A. Building Entrance To Road Attachment
 
 - User task: describe how one building entrance attaches to one nearby road segment.
-- Codex role: ask for the user's expected data before code; review the reasoning; do not provide a finished system.
+- AI role: ask for the user's expected data before code; review the reasoning; do not provide a finished system.
 - Evidence: `docs/design-notes/2026-09-01-road-network-and-building-access.md`, TM:PE nodes/segments/lanes vocabulary, OSRM/GraphHopper coordinate-to-road matching analogies.
 - Exit check: user can explain why the global road graph should not permanently include every building by default.
 
 ### 6. Zoning And Growth
 
 - User task: model one zone type and one growth condition.
-- Codex role: keep the rule deliberately fake but testable; avoid balancing numbers for the user.
+- AI role: keep the rule deliberately fake but testable; avoid balancing numbers for the user.
 - Evidence: Cities: Skylines uses zoning/building categories; local tests define this project's simplified behavior.
 - Exit check: user can separate "game design guess" from "tested rule."
 
 ### 7. Services And Economy
 
 - User task: add one resource or service pressure, such as money, power, or maintenance.
-- Codex role: insist on one cause/effect loop and one visible failure state.
+- AI role: insist on one cause/effect loop and one visible failure state.
 - Evidence: city-builder manuals include services and budgets as system categories.
 - Exit check: user can point to a test showing both normal and failing conditions.
 
 ### 8. Traffic And Pathfinding
 
 - User task: only after roads and map are stable, attempt a tiny route query.
-- Codex role: start with BFS or simple graph reasoning; delay A* until the user can explain the simpler version. Keep the "last 100 meters" as local logic, not global graph bloat.
+- AI role: start with BFS or simple graph reasoning; delay A* until the user can explain the simpler version. Keep the "last 100 meters" as local logic, not global graph bloat.
 - Evidence: local graph tests; pathfinding is a later system because it depends on map and roads.
 - Exit check: user can explain nodes, edges, start, goal, and no-path behavior.
 
 ### 9. Persistence And Replay
 
 - User task: save/load a tiny state or replay a tiny command list.
-- Codex role: make determinism visible; prepare for future networking without adding a server.
+- AI role: make determinism visible; prepare for future networking without adding a server.
 - Evidence: local snapshot files and repeated command output.
 - Exit check: same input produces same state twice.
 
 ### 10. Unity Presentation Layer
 
 - User task: only after core rules exist, map one core state to a Unity-style view concept.
-- Codex role: keep MonoBehaviour-like code thin; teach lifecycle boundaries.
+- AI role: keep MonoBehaviour-like code thin; teach lifecycle boundaries.
 - Evidence: Unity execution-order and assembly-definition docs.
 - Exit check: core tests still pass without Unity.
 
 ### 11. Networking Preparation
 
 - User task: convert user actions into explicit commands.
-- Codex role: explain authority/ownership concepts, but do not build server code yet.
+- AI role: explain authority/ownership concepts, but do not build server code yet.
 - Evidence: Unity Netcode docs and local replay/determinism checks.
 - Exit check: a command can be replayed locally before any network transport exists.
 
-## Source Links For Codex
+## Source Links For AI
 
 - Microsoft .NET CLI overview: https://learn.microsoft.com/en-us/dotnet/core/tools/
 - Unity event execution order: https://docs.unity3d.com/Manual/execution-order.html

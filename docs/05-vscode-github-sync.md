@@ -1,6 +1,6 @@
 # VS Code GitHub Sync Notes
 
-This document is for Codex agents. Keep it short.
+This document is for AI. Keep it short.
 
 ## Current Setup
 
@@ -21,6 +21,6 @@ git push
 
 ## Rules
 
-- Do not use GitHub Desktop.
-- Use VS Code Git/GitHub UI only if normal Git auth breaks.
-- If auth fails, ask the user for a project-specific auth method.
+- Git may be managed with plain Git commands, VS Code Git/GitHub UI, or GitHub Desktop.
+- Prefer the client that already has write access to this repository.
+- If auth fails, try another allowed Git client, then ask the user for a project-specific auth method.

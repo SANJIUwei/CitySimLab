@@ -18,7 +18,7 @@ src/CitySim.Core        Core simulation code
 src/CitySim.Headless    Command-line runner for non-Unity experiments
 src/CitySim.UnityMock   Minimal Unity-like concepts for learning lifecycle patterns
 tests/CitySim.Tests     Automated tests
-docs/                   Design notes, learning notes, and Codex handoff docs
+docs/                   Design notes, learning notes, and AI handoff docs
 saves/                  Placeholder for future saves or simulation snapshots
 tools/                  Utility scripts
 ```

@@ -1,24 +1,25 @@
-# Codex Handoff
+# AI Handoff
 
-This document is for Codex agents, not tutorial prose. Keep it compact and update it at the end of each work/home session.
+This document is for AI, not tutorial prose. Keep it compact and update it at the end of each work/home session.
 
 ## Current State
 
-- Last updated: 2026-09-02 01:01 +08:00
-- Last known location: home
-- Root: `E:\code\code home\city`
+- Last updated: 2026-09-10
+- Last known location: work
+- Root: `E:\Myself\CitySimLab`
 - Branch: `main`
 - Remote: `https://github.com/SANJIUwei/CitySimLab.git`
 - Tracking: `main -> origin/main`
-- Sync status: home environment synchronized and committed locally; pushing to `origin/main` is blocked by GitHub authentication, so the company environment can pull this handoff after project-account authentication is fixed
+- Sync status: local working tree has a new design note; not committed unless the user asks
 - Working tree should be clean after each session close
 
 ## Project Intent
 
 - Beginner learning project for building a city simulation game from zero.
-- Codex should scaffold, debug, verify, and guide.
+- AI should scaffold, debug, verify, and guide.
 - Do not implement gameplay systems unless the user explicitly asks.
 - Let the user write first when the task is gameplay learning.
+- Standing split: user writes feature code; AI writes comments/tests in `tests/CitySim.Tests` and runs them. Do not ask the user for tests.
 
 ## Environment
 
@@ -30,14 +31,14 @@ This document is for Codex agents, not tutorial prose. Keep it compact and updat
 - Docs: `docs`
 - Design notes: `docs/design-notes`
 - Verification script: `tools\verify.ps1`
-- Codex teaching plan: `docs/CODEX_TEACHING_PLAN.md`
+- AI teaching plan: `docs/AI_TEACHING_PLAN.md`
 
 ## Git Sync Rules
 
-- Do not use GitHub Desktop.
+- Git may be managed with plain Git commands, VS Code Git/GitHub UI, or GitHub Desktop.
 - Start session: `git status --short --branch`, then `git pull --ff-only` if clean.
 - End session: update this file, run `tools\verify.ps1`, commit, then `git push`.
-- If normal Git auth fails, use VS Code built-in Git/GitHub UI or ask the user for a project-specific auth method.
+- If normal Git auth fails, use VS Code Git/GitHub UI, GitHub Desktop, or ask the user for a project-specific auth method.
 - Keep old auth failures out of this document unless they are still actionable.
 
 ## Last Verification
@@ -57,14 +58,13 @@ This document is for Codex agents, not tutorial prose. Keep it compact and updat
 
 ## Latest Work
 
-- Added `docs/design-notes/` for Codex-only design continuity.
-- Recorded the user's 2026-09-01 reasoning about road graphs, nodes/segments, free building world positions, road attachments, and the "last 100 meters" local approach.
-- Updated `docs/CODEX_TEACHING_PLAN.md` so the near-term teaching track focuses on building entrance to road attachment, not full gameplay implementation.
-- Reinforced in `AGENTS.md` that this is a private practice project: do not use game-development skills or write gameplay code unless the user explicitly asks in the current turn.
-- User requested that design-thinking notes be written in Chinese because English is tiring to read; `docs/design-notes/` was converted to Chinese and future user-thought notes should default to Simplified Chinese.
-- Local `src/CitySim.Core/WorldPosition.cs` exists and appears to represent the user's coordinate-practice thread; do not modify it unless asked.
-- 家里环境已完成同步：仓库位于 `E:\code\code home\city`，分支为 `main`，已跟踪 `origin/main`；本次仅更新交接日志，未修改玩法代码。
-- 家里已完成构建、测试和 Headless 运行验证，并创建本地进度提交；远程推送等待 GitHub 项目账号认证完成后再执行，当前没有玩法代码改动。
+- Recorded the user's 2026-09-10 placement discussion in `docs/design-notes/2026-09-10-placement-logic-vs-visual-naturalness.md`.
+- User compared Cities: Skylines road-attached buildings with Transport Fever free placement plus auto-connect.
+- User currently judges Skylines-style attachment as logically clearer for nodes and entrances, but visually fake/unnatural (art and detail, not code). Topic is parked until the user understands roads and pathfinding more deeply.
+- User is still only at `WorldPosition.cs` plus `Distance`. Do not jump to road architecture.
+- User asked on 2026-09-10 that AI own tests going forward: write them in sync with feature changes, add comments, run `dotnet test`. User will not write tests.
+- Current tests: smoke + 3-4-5 distance + identical-points distance 0.
+- No gameplay code was changed by AI this turn.
 
 ## Next Recommended Action
 
@@ -76,10 +76,10 @@ If the next session is sync/setup work:
 
 If the next session is gameplay learning:
 
-1. Read `docs/design-notes/2026-09-01-road-network-and-building-access.md`.
-2. Ask the user to explain building position, building entrance, road segment, and road attachment in their own words.
-3. If the user asks to code, guide them toward one tiny calculation: nearest point on a single segment and attachment `t`.
-4. Let the user attempt the code first; Codex reviews, debugs, and verifies.
+1. Stay with `WorldPosition` unless the user asks to move on.
+2. Read `docs/design-notes/2026-09-01-road-network-and-building-access.md` and `docs/design-notes/2026-09-10-placement-logic-vs-visual-naturalness.md` before reopening placement/pathfinding.
+3. Do not resume the Skylines-vs-Transport-Fever choice unless the user brings it up.
+4. Let the user write feature code first; AI writes/runs matching tests and reviews.
 
 ## Close Template
 

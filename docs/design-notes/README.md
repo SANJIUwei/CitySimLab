@@ -16,4 +16,5 @@
 - `2026-09-01-road-network-and-building-access.md`：路网图、建筑入口、道路接入关系，以及“最后 100 米”的局部接近思路。
 - `2026-09-10-placement-logic-vs-visual-naturalness.md`：天际线依附道路 vs 狂热运输自由摆放；逻辑上依附道路更清晰，但视觉自然感应先记着，等理解更深后再讨论。
 - `2026-09-10-segment-and-lanes.md`：路段从一开始就包含车道；多个起止在车道上，段两端仍是两个节点。
-- `2026-09-10-pathfinding-pipeline.md`：建筑A到B = 入口Node + 带权全局最短路 + 最后一段固定流程（出口 Node → t → 进门）；求路排队以后再做。
+- `2026-09-10-pathfinding-pipeline.md`：建筑只发 A/B；事物排队求路并收路线；入口 Node 看 t；出发和到达两段局部固定流程。
+- `2026-09-11-current-problems.md`：当前逻辑层还没解决的问题（不会走、路线绑建筑、车道和图两套拓扑、接入扫全图等）。

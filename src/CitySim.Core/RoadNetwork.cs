@@ -32,16 +32,13 @@ public class RoadNetwork
         return segment;
     }
 
-    // 已接入的建筑只在自己那一段的两个端点里挑近的，O(1)，避免扫全图误绑到旁边另一条路。
+    // 入口 Node 只看缓存的 t：靠近 0 走 Start，靠近 1 走 End。不用直线距离，避免门口歪了就上错端。
     public RoadNode FindEntryNode(Building building)
     {
         if (building.Attachment == null)
             throw new InvalidOperationException("Building is not attached to a segment");
-        var seg = building.Attachment.Segment;
-        var world = new World();
-        double dStart = world.Distance(building.Entrance, seg.StartNode.Position);
-        double dEnd = world.Distance(building.Entrance, seg.EndNode.Position);
-        return dStart <= dEnd ? seg.StartNode : seg.EndNode;
+        var attachment = building.Attachment;
+        return attachment.T <= 0.5f ? attachment.Segment.StartNode : attachment.Segment.EndNode;
     }
 
     public GlobalPath FindPath(long startId, long endId)
@@ -107,7 +104,7 @@ public class RoadNetwork
         return FindPath(a.ID, b.ID);
     }
 
-    // 同一段：只走局部 t→t，不进全局图。跨段：局部到入口 Node，再跑全局，再从出口 Node 局部到 t。
+    // 同一段：只走局部 t→t，不进全局图。跨段：出门→t→入口 Node，全局最短路，出口 Node→t→进门。
     public Trip PlanTrip(Building from, Building to)
     {
         if (from.Attachment == null || to.Attachment == null)
@@ -119,14 +116,17 @@ public class RoadNetwork
         if (ReferenceEquals(from.Attachment.Segment, to.Attachment.Segment))
         {
             double localCost = from.Attachment.Segment.LengthBetween(from.Attachment.T, to.Attachment.T);
-            var localApproach = new LocalApproach(null, to.Attachment, to.Entrance);
-            return new Trip(from, to, sameSegment: true, GlobalPath.LocalOnly(localCost), fromOnRoad, toOnRoad, localApproach);
+            var departure = new LocalDeparture(from.Entrance, from.Attachment, null);
+            var approach = new LocalApproach(null, to.Attachment, to.Entrance);
+            return new Trip(from, to, sameSegment: true, GlobalPath.LocalOnly(localCost), fromOnRoad, toOnRoad, departure, approach);
         }
 
         var global = FindPath(from, to);
+        RoadNode? entryNode = global.Found ? FindEntryNode(from) : null;
         RoadNode? exitNode = global.Found ? FindEntryNode(to) : null;
-        var approach = new LocalApproach(exitNode, to.Attachment, to.Entrance);
-        return new Trip(from, to, sameSegment: false, global, fromOnRoad, toOnRoad, approach);
+        var startLocal = new LocalDeparture(from.Entrance, from.Attachment, entryNode);
+        var endLocal = new LocalApproach(exitNode, to.Attachment, to.Entrance);
+        return new Trip(from, to, sameSegment: false, global, fromOnRoad, toOnRoad, startLocal, endLocal);
     }
 }
 
@@ -156,6 +156,7 @@ public sealed class Trip
     public GlobalPath Global { get; }
     public World.WorldPosition FromOnRoad { get; }
     public World.WorldPosition ToOnRoad { get; }
+    public LocalDeparture Departure { get; }
     public LocalApproach Approach { get; }
 
     public bool Reachable => SameSegment || Global.Found;
@@ -167,6 +168,7 @@ public sealed class Trip
         GlobalPath global,
         World.WorldPosition fromOnRoad,
         World.WorldPosition toOnRoad,
+        LocalDeparture departure,
         LocalApproach approach)
     {
         From = from;
@@ -175,6 +177,7 @@ public sealed class Trip
         Global = global;
         FromOnRoad = fromOnRoad;
         ToOnRoad = toOnRoad;
+        Departure = departure;
         Approach = approach;
     }
 }

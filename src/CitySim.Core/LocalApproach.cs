@@ -4,9 +4,9 @@ using System.Collections.Generic;
 // 固定两步：沿目标路段走到缓存的 t，再从挂接点进门。
 public enum LocalStepKind
 {
-    ExitNode,
+    Entrance,
     OnRoad,
-    Entrance
+    Node
 }
 
 public readonly struct LocalStep
@@ -61,9 +61,56 @@ public sealed class LocalApproach
     {
         var steps = new List<LocalStep>(3);
         if (ExitNode != null)
-            steps.Add(new LocalStep(LocalStepKind.ExitNode, ExitNode.Position));
+            steps.Add(new LocalStep(LocalStepKind.Node, ExitNode.Position));
         steps.Add(new LocalStep(LocalStepKind.OnRoad, OnRoad));
         steps.Add(new LocalStep(LocalStepKind.Entrance, Entrance));
+        return steps;
+    }
+}
+
+// 最先一段：出门后不再搜图。固定两步：挂接点 t，再到入口 Node。同一段没有入口 Node。
+public sealed class LocalDeparture
+{
+    public World.WorldPosition Entrance { get; }
+    public RoadAttachment Attachment { get; }
+    public RoadNode? EntryNode { get; }
+
+    public World.WorldPosition OnRoad => Attachment.Segment.PointAt(Attachment.T);
+
+    public LocalDeparture(World.WorldPosition entrance, RoadAttachment attachment, RoadNode? entryNode)
+    {
+        Entrance = entrance;
+        Attachment = attachment;
+        EntryNode = entryNode;
+    }
+
+    public double AlongSegmentCost
+    {
+        get
+        {
+            if (EntryNode == null)
+                return 0;
+            float tTo = ReferenceEquals(EntryNode, Attachment.Segment.StartNode) ? 0f : 1f;
+            return Attachment.Segment.LengthBetween(Attachment.T, tTo);
+        }
+    }
+
+    public double OffRoadDistance
+    {
+        get
+        {
+            var world = new World();
+            return world.Distance(Entrance, OnRoad);
+        }
+    }
+
+    public List<LocalStep> Steps()
+    {
+        var steps = new List<LocalStep>(3);
+        steps.Add(new LocalStep(LocalStepKind.Entrance, Entrance));
+        steps.Add(new LocalStep(LocalStepKind.OnRoad, OnRoad));
+        if (EntryNode != null)
+            steps.Add(new LocalStep(LocalStepKind.Node, EntryNode.Position));
         return steps;
     }
 }

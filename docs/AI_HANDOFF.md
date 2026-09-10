@@ -4,13 +4,13 @@ This document is for AI, not tutorial prose. Keep it compact and update it at th
 
 ## Current State
 
-- Last updated: 2026-09-10
+- Last updated: 2026-09-11
 - Last known location: home
 - Root: `E:\code\code home\city`
 - Branch: `main`
 - Remote: `https://github.com/SANJIUwei/CitySimLab.git`
 - Tracking: `main -> origin/main`
-- Sync status: local last-meters LocalApproach added; commit after verify
+- Sync status: current-problems note ready to commit and push
 - Working tree should be clean after each session close
 
 ## Project Intent
@@ -56,16 +56,18 @@ This document is for AI, not tutorial prose. Keep it compact and update it at th
 
 ## Latest Work
 
-- Home session pulled `e0101e2`, then added `PlanTrip` and the last-meters `LocalApproach`.
-- Last meters is a fixed local sequence, not a graph search: ExitNode (cross-segment only) → cached `t` on the target segment → building Entrance.
-- Same-segment trips skip ExitNode; along-segment cost is already in the on-road `t→t` cost.
-- Still not implemented: turning, signs, path-request queue, vehicles, nearest-point attachment.
+- Fixed entry node to use cached `t`, not straight-line distance to the door.
+- Split `Segment.Length` (geometry) from `Segment.Cost` (graph weight).
+- Added `LocalDeparture` (door → t → entry node) and kept `LocalApproach` (exit node → t → door).
+- Building only issues `TripCommand` A/B. `Thing` submits, waits, receives. `Pathfinder.Process(budget)` drains the queue.
+- Building spawn computes nearest point on the road network and caches `segment + t`; pathfinding only reads that cache.
+- Wrote `docs/design-notes/2026-09-11-current-problems.md`: Thing does not move yet; Trip is still bound to buildings; lanes vs `_adj` are two topologies; AttachNearest scans all segments with no max distance; stale attachment; IssueTo without attach; node-to-node Request bypasses the queue.
 
 ## Next Recommended Action
 
-1. Wait for user review of `LocalApproach`.
-2. Do not add turning, signs, A*, or a path queue unless the user asks.
-3. Read `docs/design-notes/2026-09-10-pathfinding-pipeline.md` before changing routing.
+1. Read `docs/design-notes/2026-09-11-current-problems.md`.
+2. Do not add vehicle types, turning, or presentation unless the user asks.
+3. Suggested next slice if asked: Thing steps along a received route.
 
 ## Close Template
 

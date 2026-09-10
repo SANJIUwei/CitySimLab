@@ -111,6 +111,35 @@ public sealed class RoadNetworkTests
         Assert.False(trip.SameSegment);
         Assert.Equal(new long[] { 1, 2, 3 }, trip.Global.NodeIds);
         Assert.Equal(20.0, trip.Global.TotalCost);
+        Assert.Same(n1, trip.Departure.EntryNode);
+        Assert.Same(n3, trip.Approach.ExitNode);
+    }
+
+    [Fact]
+    public void FindEntryNode_UsesCachedTNotStraightLineToEntrance()
+    {
+        var net = new RoadNetwork();
+        var n1 = new RoadNode(new World.WorldPosition { x = 0, y = 0, z = 0 }, 1);
+        var n2 = new RoadNode(new World.WorldPosition { x = 10, y = 0, z = 0 }, 2);
+        var segment = net.AddSegment(n1, n2, 10);
+        var house = new Building(
+            new World.WorldPosition { x = 1, y = 0, z = 0 },
+            new World.WorldPosition { x = 9, y = 0, z = 0 });
+        house.AttachTo(segment, 0.1f);
+
+        Assert.Equal(1, net.FindEntryNode(house).ID);
+    }
+
+    [Fact]
+    public void LengthBetween_UsesGeometryNotPathCost()
+    {
+        var start = new RoadNode(new World.WorldPosition { x = 0, y = 0, z = 0 }, 1);
+        var end = new RoadNode(new World.WorldPosition { x = 10, y = 0, z = 0 }, 2);
+        var segment = new RoadSegment(start, end, cost: 100);
+
+        Assert.Equal(10.0, segment.Length, 5);
+        Assert.Equal(100.0, segment.Cost);
+        Assert.Equal(8.0, segment.LengthBetween(0.1f, 0.9f), 5);
     }
 
     [Fact]

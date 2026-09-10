@@ -27,7 +27,7 @@ public sealed class LocalApproachTests
         Assert.False(trip.SameSegment);
         Assert.Same(n3, trip.Approach.ExitNode);
         Assert.Equal(3, steps.Count);
-        Assert.Equal(LocalStepKind.ExitNode, steps[0].Kind);
+        Assert.Equal(LocalStepKind.Node, steps[0].Kind);
         Assert.Equal(20f, steps[0].Position.x, 3);
         Assert.Equal(LocalStepKind.OnRoad, steps[1].Kind);
         Assert.Equal(19f, steps[1].Position.x, 3);
@@ -68,5 +68,38 @@ public sealed class LocalApproachTests
         Assert.Equal(9f, steps[1].Position.x, 3);
         Assert.Equal(1f, steps[1].Position.y, 3);
         Assert.Equal(1.0, trip.Approach.OffRoadDistance, 5);
+    }
+
+    [Fact]
+    public void CrossSegment_DepartureLeavesDoorThenWalksToTThenEntryNode()
+    {
+        var net = new RoadNetwork();
+        var n1 = new RoadNode(new World.WorldPosition { x = 0, y = 0, z = 0 }, 1);
+        var n2 = new RoadNode(new World.WorldPosition { x = 10, y = 0, z = 0 }, 2);
+        var n3 = new RoadNode(new World.WorldPosition { x = 20, y = 0, z = 0 }, 3);
+        var s12 = net.AddSegment(n1, n2, 10);
+        var s23 = net.AddSegment(n2, n3, 10);
+
+        var houseA = new Building(
+            new World.WorldPosition { x = 1, y = 2, z = 0 },
+            new World.WorldPosition { x = 1, y = 0.5f, z = 0 });
+        var houseB = new Building(
+            new World.WorldPosition { x = 19, y = 2, z = 0 },
+            new World.WorldPosition { x = 19, y = 0, z = 0 });
+        houseA.AttachTo(s12, 0.1f);
+        houseB.AttachTo(s23, 0.9f);
+
+        var trip = net.PlanTrip(houseA, houseB);
+        var steps = trip.Departure.Steps();
+
+        Assert.Same(n1, trip.Departure.EntryNode);
+        Assert.Equal(3, steps.Count);
+        Assert.Equal(LocalStepKind.Entrance, steps[0].Kind);
+        Assert.Equal(LocalStepKind.OnRoad, steps[1].Kind);
+        Assert.Equal(1f, steps[1].Position.x, 3);
+        Assert.Equal(LocalStepKind.Node, steps[2].Kind);
+        Assert.Equal(0f, steps[2].Position.x, 3);
+        Assert.Equal(1.0, trip.Departure.AlongSegmentCost, 5);
+        Assert.Equal(0.5, trip.Departure.OffRoadDistance, 5);
     }
 }

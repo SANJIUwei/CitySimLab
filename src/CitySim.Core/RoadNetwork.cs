@@ -106,19 +106,75 @@ public class RoadNetwork
         var b = FindEntryNode(to);
         return FindPath(a.ID, b.ID);
     }
+
+    // 同一段：只走局部 t→t，不进全局图。跨段：局部到入口 Node，再跑全局，再从出口 Node 局部到 t。
+    public Trip PlanTrip(Building from, Building to)
+    {
+        if (from.Attachment == null || to.Attachment == null)
+            throw new InvalidOperationException("Building is not attached to a segment");
+
+        var fromOnRoad = from.Attachment.Segment.PointAt(from.Attachment.T);
+        var toOnRoad = to.Attachment.Segment.PointAt(to.Attachment.T);
+
+        if (ReferenceEquals(from.Attachment.Segment, to.Attachment.Segment))
+        {
+            double localCost = from.Attachment.Segment.LengthBetween(from.Attachment.T, to.Attachment.T);
+            var localApproach = new LocalApproach(null, to.Attachment, to.Entrance);
+            return new Trip(from, to, sameSegment: true, GlobalPath.LocalOnly(localCost), fromOnRoad, toOnRoad, localApproach);
+        }
+
+        var global = FindPath(from, to);
+        RoadNode? exitNode = global.Found ? FindEntryNode(to) : null;
+        var approach = new LocalApproach(exitNode, to.Attachment, to.Entrance);
+        return new Trip(from, to, sameSegment: false, global, fromOnRoad, toOnRoad, approach);
+    }
 }
 
 public sealed class GlobalPath
 {
     public static readonly GlobalPath None = new GlobalPath(new List<long>(), double.PositiveInfinity);
 
+    public static GlobalPath LocalOnly(double cost) => new GlobalPath(new List<long>(), cost);
+
     public List<long> NodeIds { get; }
     public double TotalCost { get; }
-    public bool Found => NodeIds.Count > 0 && !double.IsPositiveInfinity(TotalCost);
+    public bool Found => !double.IsPositiveInfinity(TotalCost);
 
     public GlobalPath(List<long> nodeIds, double totalCost)
     {
         NodeIds = nodeIds;
         TotalCost = totalCost;
+    }
+}
+
+// 一次出行：路上的两个接入点 + 可选的全局 Node 序列。载具还没写，这里只给出该走哪一段。
+public sealed class Trip
+{
+    public Building From { get; }
+    public Building To { get; }
+    public bool SameSegment { get; }
+    public GlobalPath Global { get; }
+    public World.WorldPosition FromOnRoad { get; }
+    public World.WorldPosition ToOnRoad { get; }
+    public LocalApproach Approach { get; }
+
+    public bool Reachable => SameSegment || Global.Found;
+
+    public Trip(
+        Building from,
+        Building to,
+        bool sameSegment,
+        GlobalPath global,
+        World.WorldPosition fromOnRoad,
+        World.WorldPosition toOnRoad,
+        LocalApproach approach)
+    {
+        From = from;
+        To = to;
+        SameSegment = sameSegment;
+        Global = global;
+        FromOnRoad = fromOnRoad;
+        ToOnRoad = toOnRoad;
+        Approach = approach;
     }
 }

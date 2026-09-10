@@ -16,3 +16,15 @@ segment.AddLane(LaneDirection.Reverse);
 
 Console.WriteLine($"Segment {start.ID}->{end.ID} lanes={segment.Lanes.Count}");
 Console.WriteLine($"Lane0={segment.Lanes[0].Direction} Lane1={segment.Lanes[1].Direction}");
+
+var net = new RoadNetwork();
+var n1 = new RoadNode(a, 1);
+var n2 = new RoadNode(b, 2);
+var road = net.AddSegment(n1, n2, cost: 5);
+var houseA = new Building(a, a);
+var houseB = new Building(b, b);
+houseA.AttachTo(road, 0.2f);
+houseB.AttachTo(road, 0.8f);
+var trip = net.PlanTrip(houseA, houseB);
+Console.WriteLine($"SameSegment={trip.SameSegment} LocalCost={trip.Global.TotalCost} Nodes={trip.Global.NodeIds.Count}");
+Console.WriteLine($"Approach steps={trip.Approach.Steps().Count} along={trip.Approach.AlongSegmentCost} offRoad={trip.Approach.OffRoadDistance}");

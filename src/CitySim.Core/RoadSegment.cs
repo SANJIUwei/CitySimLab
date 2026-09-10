@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 // 图上的一条边：永远两个端点。多车道、多方向是边上的 Lane，不要为此再拆出更多 Node。
@@ -32,6 +33,12 @@ public class RoadSegment
         };
     }
 
+    // 同一段上两个接入点之间的沿路代价。现在 Cost 当长度；弯路以后再换几何长度。
+    public double LengthBetween(float tA, float tB)
+    {
+        return Math.Abs(tA - tB) * Cost;
+    }
+
     // 从段上创建车道，保证 Lanes 和 lane.Segment 同时写上；不要在外面 new RoadLane 再漏加进列表。
     public RoadLane AddLane(LaneDirection direction)
     {
@@ -41,5 +48,4 @@ public class RoadSegment
     }
 
     // TODO(以后): 长度/弯直。现在用两端坐标就能量直线距离，弯路几何还没定。
-    // TODO(以后): 建筑接入。接入挂在段上而不是切段，避免每个建筑变成图节点。
 }

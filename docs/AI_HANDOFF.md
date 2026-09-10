@@ -5,12 +5,12 @@ This document is for AI, not tutorial prose. Keep it compact and update it at th
 ## Current State
 
 - Last updated: 2026-09-10
-- Last known location: work
-- Root: `E:\Myself\CitySimLab`
+- Last known location: home
+- Root: `E:\code\code home\city`
 - Branch: `main`
 - Remote: `https://github.com/SANJIUwei/CitySimLab.git`
 - Tracking: `main -> origin/main`
-- Sync status: local working tree has a new design note; not committed unless the user asks
+- Sync status: local last-meters LocalApproach added; commit after verify
 - Working tree should be clean after each session close
 
 ## Project Intent
@@ -56,15 +56,16 @@ This document is for AI, not tutorial prose. Keep it compact and update it at th
 
 ## Latest Work
 
-- Role change 2026-09-10: user plans/supervises; AI implements. See `docs/07-roles.md`.
-- Implemented minimal road graph: `RoadNode` (position + id), `RoadSegment` (two nodes + lanes), `RoadLane` (segment + Forward/Reverse). No turns, signs, or building access yet.
-- Tests: 5 passing. Headless prints a 1->2 two-lane segment.
+- Home session pulled `e0101e2`, then added `PlanTrip` and the last-meters `LocalApproach`.
+- Last meters is a fixed local sequence, not a graph search: ExitNode (cross-segment only) → cached `t` on the target segment → building Entrance.
+- Same-segment trips skip ExitNode; along-segment cost is already in the on-road `t→t` cost.
+- Still not implemented: turning, signs, path-request queue, vehicles, nearest-point attachment.
 
 ## Next Recommended Action
 
-1. Wait for user supervision on the node/segment/lane skeleton.
-2. Do not add turning, signs, A*, or building attachment unless the user asks.
-3. Read `docs/design-notes/2026-09-10-segment-and-lanes.md` before changing road types.
+1. Wait for user review of `LocalApproach`.
+2. Do not add turning, signs, A*, or a path queue unless the user asks.
+3. Read `docs/design-notes/2026-09-10-pathfinding-pipeline.md` before changing routing.
 
 ## Close Template
 

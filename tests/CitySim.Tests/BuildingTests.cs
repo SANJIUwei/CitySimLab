@@ -14,6 +14,7 @@ public sealed class BuildingTests
 
         building.AttachTo(segment, 0.5f);
 
+        Assert.NotNull(building.Attachment);
         Assert.Same(segment, building.Attachment.Segment);
         Assert.Equal(0.5f, building.Attachment.T);
     }

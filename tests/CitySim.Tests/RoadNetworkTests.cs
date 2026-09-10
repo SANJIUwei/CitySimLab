@@ -61,6 +61,59 @@ public sealed class RoadNetworkTests
     }
 
     [Fact]
+    public void PlanTrip_SameSegment_StaysLocalAndDoesNotEnterGlobalGraph()
+    {
+        var net = new RoadNetwork();
+        var n1 = new RoadNode(new World.WorldPosition { x = 0, y = 0, z = 0 }, 1);
+        var n2 = new RoadNode(new World.WorldPosition { x = 10, y = 0, z = 0 }, 2);
+        var segment = net.AddSegment(n1, n2, 10);
+
+        var houseA = new Building(
+            new World.WorldPosition { x = 1, y = 2, z = 0 },
+            new World.WorldPosition { x = 1, y = 0, z = 0 });
+        var houseB = new Building(
+            new World.WorldPosition { x = 9, y = 2, z = 0 },
+            new World.WorldPosition { x = 9, y = 0, z = 0 });
+        houseA.AttachTo(segment, 0.1f);
+        houseB.AttachTo(segment, 0.9f);
+
+        var trip = net.PlanTrip(houseA, houseB);
+
+        Assert.True(trip.SameSegment);
+        Assert.True(trip.Reachable);
+        Assert.Empty(trip.Global.NodeIds);
+        Assert.Equal(8.0, trip.Global.TotalCost, 5);
+        Assert.Equal(1f, trip.FromOnRoad.x, 3);
+        Assert.Equal(9f, trip.ToOnRoad.x, 3);
+    }
+
+    [Fact]
+    public void PlanTrip_DifferentSegments_UsesEntryNodesThenGlobalPath()
+    {
+        var net = new RoadNetwork();
+        var n1 = new RoadNode(new World.WorldPosition { x = 0, y = 0, z = 0 }, 1);
+        var n2 = new RoadNode(new World.WorldPosition { x = 10, y = 0, z = 0 }, 2);
+        var n3 = new RoadNode(new World.WorldPosition { x = 20, y = 0, z = 0 }, 3);
+        var s12 = net.AddSegment(n1, n2, 10);
+        var s23 = net.AddSegment(n2, n3, 10);
+
+        var houseA = new Building(
+            new World.WorldPosition { x = 1, y = 2, z = 0 },
+            new World.WorldPosition { x = 1, y = 0, z = 0 });
+        var houseB = new Building(
+            new World.WorldPosition { x = 19, y = 2, z = 0 },
+            new World.WorldPosition { x = 19, y = 0, z = 0 });
+        houseA.AttachTo(s12, 0.1f);
+        houseB.AttachTo(s23, 0.9f);
+
+        var trip = net.PlanTrip(houseA, houseB);
+
+        Assert.False(trip.SameSegment);
+        Assert.Equal(new long[] { 1, 2, 3 }, trip.Global.NodeIds);
+        Assert.Equal(20.0, trip.Global.TotalCost);
+    }
+
+    [Fact]
     public void FindPath_GridPerformanceSnapshot()
     {
         const int n = 40;

@@ -4,9 +4,9 @@ This file is for AI working on CitySimLab. Treat it as the first file to read af
 
 ## Human Goal
 
-The user is a beginner learning how to build a city simulation game from zero. The project may later approach systems found in Cities: Skylines 1, including networking, but the learning goal matters more than fast completion.
+The user is a beginner building a city simulation from zero. From 2026-09-10 the standing split is: the user plans and supervises; AI implements.
 
-Do not implement gameplay systems unless the user explicitly asks for implementation help. Prefer environment setup, debugging, Socratic guidance, tests, and small reviewable steps.
+AI writes feature code, tests, and headless experiments. Do not ask the user to write or paste code. Present results for review. Keep steps small enough to supervise. Record design thoughts in Simplified Chinese.
 
 ## Session Start Protocol
 
@@ -38,16 +38,13 @@ git status --short
 
 If verification passes and changes are intentional, commit with a short message. If GitHub remote/auth is available, push. If not, leave the repo in a clean local committed state and record the blocker in `docs/AI_HANDOFF.md`.
 
-## Teaching Style
+## Roles
 
-- Let the user write first when the task is gameplay learning.
-- The user writes feature code only (`src/CitySim.Core`, `src/CitySim.Headless`). AI writes and runs tests in `tests/CitySim.Tests` in sync; do not ask the user to write tests.
-- Give hints before full answers.
-- Ask the user to predict behavior before running experiments.
-- When fixing an error, explain the smallest cause and the smallest verification.
-- Keep code changes tiny unless the user asks for a larger setup step.
-- For this private practice project, do not use game-development skills or write gameplay code unless the user explicitly asks in the current turn.
-- Record the user's design thoughts in Simplified Chinese by default; the user finds English tiring to read.
+- User: planning and supervision. Direction, decisions, review, stop or change requirements.
+- AI: full implementation. Feature code in `src/CitySim.Core` and `src/CitySim.Headless`, tests in `tests/CitySim.Tests`.
+- Do not ask the user to write, copy, or paste code.
+- Batch tests per `docs/06-when-to-test.md`. See also `docs/07-roles.md`.
+- Record the user's design thoughts in Simplified Chinese by default.
 
 ## Architecture Rules
 

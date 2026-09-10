@@ -15,11 +15,9 @@ This document is for AI, not tutorial prose. Keep it compact and update it at th
 
 ## Project Intent
 
-- Beginner learning project for building a city simulation game from zero.
-- AI should scaffold, debug, verify, and guide.
-- Do not implement gameplay systems unless the user explicitly asks.
-- Let the user write first when the task is gameplay learning.
-- Standing split: user writes feature code; AI writes comments/tests in `tests/CitySim.Tests` and runs them. Do not ask the user for tests.
+- Beginner city-simulation project. User plans and supervises; AI implements (2026-09-10).
+- AI writes feature code, tests, and headless experiments. Do not ask the user to write code.
+- Batch tests per `docs/06-when-to-test.md`. Roles: `docs/07-roles.md`.
 
 ## Environment
 
@@ -58,28 +56,15 @@ This document is for AI, not tutorial prose. Keep it compact and update it at th
 
 ## Latest Work
 
-- Recorded the user's 2026-09-10 placement discussion in `docs/design-notes/2026-09-10-placement-logic-vs-visual-naturalness.md`.
-- User compared Cities: Skylines road-attached buildings with Transport Fever free placement plus auto-connect.
-- User currently judges Skylines-style attachment as logically clearer for nodes and entrances, but visually fake/unnatural (art and detail, not code). Topic is parked until the user understands roads and pathfinding more deeply.
-- User is still only at `WorldPosition.cs` plus `Distance`. Do not jump to road architecture.
-- User asked on 2026-09-10 that AI own tests going forward: write them in sync with feature changes, add comments, run `dotnet test`. User will not write tests.
-- Current tests: smoke + 3-4-5 distance + identical-points distance 0.
-- No gameplay code was changed by AI this turn.
+- Role change 2026-09-10: user plans/supervises; AI implements. See `docs/07-roles.md`.
+- Implemented minimal road graph: `RoadNode` (position + id), `RoadSegment` (two nodes + lanes), `RoadLane` (segment + Forward/Reverse). No turns, signs, or building access yet.
+- Tests: 5 passing. Headless prints a 1->2 two-lane segment.
 
 ## Next Recommended Action
 
-If the next session is sync/setup work:
-
-1. Pull with `git pull --ff-only`.
-2. Verify with `tools\verify.ps1`.
-3. Update this handoff only with current, actionable state.
-
-If the next session is gameplay learning:
-
-1. Stay with `WorldPosition` unless the user asks to move on.
-2. Read `docs/design-notes/2026-09-01-road-network-and-building-access.md` and `docs/design-notes/2026-09-10-placement-logic-vs-visual-naturalness.md` before reopening placement/pathfinding.
-3. Do not resume the Skylines-vs-Transport-Fever choice unless the user brings it up.
-4. Let the user write feature code first; AI writes/runs matching tests and reviews.
+1. Wait for user supervision on the node/segment/lane skeleton.
+2. Do not add turning, signs, A*, or building attachment unless the user asks.
+3. Read `docs/design-notes/2026-09-10-segment-and-lanes.md` before changing road types.
 
 ## Close Template
 

@@ -4,13 +4,12 @@ This document is for AI. It is a teaching plan, not an implementation plan. Do n
 
 ## Operating Rule
 
-- User writes gameplay first; AI guides, reviews, debugs, tests, and explains.
-- Tests are AI's job: when the user changes feature code, write or update `tests/CitySim.Tests`, add short comments, and run them. Do not ask the user to write tests.
-- Every lesson must have objective evidence: a local file, a command result, an official reference, or observed user output.
-- Prefer questions and tiny exercises over finished answers.
-- Never prebuild the city simulation for the user.
-- This is a private practice project. Do not invoke game-development skills or generate gameplay code unless the user explicitly requests that kind of help in the current turn.
-- Record the user's own design thoughts in Simplified Chinese by default.
+- User plans and supervises; AI implements, tests, and explains.
+- Do not ask the user to write code. Discuss a slice, then AI edits files.
+- Tests are batched: `docs/06-when-to-test.md`. Roles: `docs/07-roles.md`.
+- Every slice must have objective evidence: a file, a command result, or a test run.
+- Keep implementations small enough to review. Do not build the whole city at once.
+- Record the user's design thoughts in Simplified Chinese by default.
 
 ## Current Design Track
 

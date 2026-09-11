@@ -16,9 +16,9 @@
 - `2026-09-01-road-network-and-building-access.md`：路网图、建筑入口、道路接入关系，以及“最后 100 米”的局部接近思路。
 - `2026-09-10-placement-logic-vs-visual-naturalness.md`：天际线依附道路 vs 狂热运输自由摆放；逻辑上依附道路更清晰，但视觉自然感应先记着，等理解更深后再讨论。
 - `2026-09-10-segment-and-lanes.md`：路段从一开始就包含车道；多个起止在车道上，段两端仍是两个节点。
-- `2026-09-10-pathfinding-pipeline.md`：TripStarter 发起出行；事物排队求路并收路线；入口 Node 看 t；出发和到达两段局部固定流程。
-- `2026-09-11-current-problems.md`：当前逻辑层还没解决的问题（步进已有、路线绑建筑、车道和图两套拓扑、接入扫全图等）。
-- `2026-09-11-structure-audit.md`：发起出行从建筑拆到 TripStarter；其余结构问题排队。
+- `2026-09-10-pathfinding-pipeline.md`：PathCenter 排队，Scheduler 管中心；RouteEnd；局部 t→t / 跨段 Node。
+- `2026-09-11-current-problems.md`：接入半径、车道与图两套拓扑、跳点走路、缓存失效。
+- `2026-09-11-structure-audit.md`：权属拆分现状。
 
 用户可读的进度图：`docs/路网思维导图.md`（大进度 / 小进度）。
 - `2026-09-11-skylines-scale.md`：百万人口 vs 路上载具上限；160×160 图上 2 万次寻路。

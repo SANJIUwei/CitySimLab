@@ -26,7 +26,7 @@
    各系统只交作业。作业有 Category、Lane、0–100 分数。按分数段排队，虚拟运行时间分配，低优先级不会饿死。  
    **已取消固定绑一核做调度。** 现在是虚拟调度：挑活和工人都在普通线程/并行里完成，主线程只 `Apply`。  
    GPU 还没接，Gpu 作业在等待队列。  
-   `Pathfinder` 只排队、按 budget Tick；真正的 `PlanTrip` 在作业的 `Execute` 里。
+   寻路计算是独立作业。`PathCenter` 负责收请求和排队，被 Scheduler 管理。`Pathfinder` 是旧名。
 
 ## 大进度
 
@@ -39,14 +39,14 @@
 1. 接入加最大距离，太远不挂（现在 `AttachNearest` 扫全图）
 2. 车道和图并成一份拓扑（单行以后会裂）
 3. 事物按距离/节拍移动，不要一次跳一个路点
-4. `Pathfinder.Request(node, node)` 并进同一条队列
+4. （已做）点对点也进 PathCenter 队列
 
 不要一回来就加车种、转向、Unity 画面。
 
 ## 一次出行
 
 ```
-RouteEnd → TripStarter → Pathfinder 交 path 作业 → ComputeScheduler
+RouteEnd → TripStarter → PathCenter 排队 → Scheduler 管中心并计算
 → 同一段 t→t；跨段 出门→入口 Node→全局最短路→出口 Node→进门
 → Thing.Advance 跳点
 ```

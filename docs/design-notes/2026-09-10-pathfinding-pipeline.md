@@ -1,19 +1,30 @@
-# 寻路流水线（未全部实现）
+# 寻路流水线
 
-日期：2026-09-10
-状态：设计记录。排队调度以后再写。
+日期：2026-09-10，2026-09-11 按现码更新
+状态：设计记录
 
-## 已定流程（建筑 A → 建筑 B）
+## 权属
 
-1. 建筑生成时自己对入口做最近点投影，把 `segment + t` 存进 Attachment。不切段，寻路时不现场搜段。
-2. 入口 Node：只看该段缓存的 t，靠近 0 走 Start，靠近 1 走 End（不是扫全图，也不是门口直线距离）。
-3. 全局：Node 之间按 Segment.Cost 做最短路（Dijkstra，不用 BFS，因为 BFS 无视边权）。
-4. 路线发给载具后，到第一个 Node 之前、离开最后一个 Node 之后，用局部本能（沿段走到 t / 进门）。
-5. Cost 是寻路边权；局部沿路距离用 Segment.Length，不要混。
-6. 同一段上的两栋建筑：`PlanTrip` 只走局部 t→t，不进全局图。跨段才找入口 Node 再跑全局。
-7. 入口 Node 只看缓存的 t（≤0.5 走 Start，否则 End），不用门口直线距离。
-8. 最先一段 `LocalDeparture`：出门 → 路上的 t → 入口 Node。最后一段 `LocalApproach`：出口 Node → t → 进门。同一段两端都没有 Node。
+- 寻路计算是作业，不属于建筑或载具。
+- `PathCenter`：收请求、组织排队。被 `ComputeScheduler.Manage`。
+- `ComputeScheduler`：Tick 时先让中心 Dispatch，再按分数/虚拟时间算。
+- `Pathfinder`：旧名，转给 PathCenter。点对点 `Request` 也会进中心队列。
 
-## 调用入口
+## 已定流程
 
-`TripStarter.Request` 发起出行，两端是 `RouteEnd`（建筑门口或路上的点）。`Thing` 排队，`Pathfinder.Process` 定额处理后把 `Trip` 发回。
+1. 建筑生成时投影入口，缓存 `segment + t`。寻路不现场搜段。
+2. 两端是 `RouteEnd`（门口或路上的点）。`TripStarter.Request` 发起。
+3. 入口 Node 看缓存 t（≤0.5 Start，否则 End）。
+4. 全局：Node 之间按 `Segment.Cost` 做 Dijkstra。
+5. 同一段：局部 t→t。跨段：出门→t→入口 Node→全局→出口 Node→t→进门。
+6. `Length` 是几何，`Cost` 是图权重。
+7. `Thing.Advance` 按逻辑点跳；还没有速度。
+
+## 调用
+
+```
+TripStarter / Thing
+  → PathCenter.Enqueue
+  → Scheduler.Tick（中心 Dispatch → 计算 → Apply）
+  → Thing 收 Trip
+```

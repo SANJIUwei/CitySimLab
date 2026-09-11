@@ -1,24 +1,25 @@
-# 通用算力调度（不是最优解，是分配合同）
+# 通用算力调度
 
 日期：2026-09-11
 阅读对象：用户监督
 
-上一版 `RunBatch` 只是给寻路包了一层 `Parallel.For`，不算通用调度。
-
-## 现在认的合同
+## 合同
 
 - 各系统只交作业，不自己抢线程。
-- 优先级是 0–100 的分数，High/Normal/Low 只是预设（80/50/20），不是三档死配额。
-- 挑选用虚拟运行时间：分数高的 vruntime 涨得慢所以多跑；等得久会扣 vruntime，低优先级不会饿死。
-- 同分数再看 Category 的累计时间，避免一类活占满。
-- `dedicatedCore: true` 时：一核只做调度（Windows 上会尽量绑核），其余核当工人；主线程只 `Apply`。
-- 测试默认不占专用核，避免每个用例拉起一堆线程。游戏/Headless 打开专用核。
-- GPU 未接入就在 Gpu 队列里等。
+- 业务中心（如 `PathCenter`）实现 `IComputeCenter`：自己收请求、自己排队。
+- Scheduler `Manage` 中心。`Tick` 先 `Dispatch` 再计算。
+- 优先级 0–100。High/Normal/Low 只是 80/50/20。
+- 按分数段排队，虚拟运行时间分配；等得久会往前挤，低优先级不饿死。
+- 主线程只 `Apply`。
+- **不绑死一颗物理核。** `dedicatedCore` 仍在代码里，但是过时选项，默认关；Headless 也不再打开。
+- GPU 未接入：Gpu 作业在等待队列。
+
+## 寻路
+
+计算是作业，不属于任何人。`PathCenter` 只发送和组织排队。
 
 ## 明确不是
 
-- 不是 Unity Job System，还没有依赖图。
-- 还不是按毫秒的硬实时切片；Tick 仍带条数上限。
+- 不是 Unity Job System，没有依赖图。
+- Tick 仍按条数，不是按毫秒硬切片。
 - GPU 内核还没写。
-
-寻路只是 `Category = path` 的一个客户。

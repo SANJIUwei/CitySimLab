@@ -42,7 +42,8 @@ This document is for AI, not tutorial prose. Keep it compact and update it at th
 - TripStarter owns trip start; Building does not IssueTo; unattached requests fail.
 - Trip/TripCommand use RouteEnd, not Building.
 - Thing.Advance walks logical waypoints.
-- ComputeScheduler is a world allocator: Category, Lane, PriorityScore 0-100, vruntime + aging. Pathfinder only submits `path` jobs.
+- PathCenter is the path queue (IComputeCenter). Search jobs belong to nobody. Scheduler manages centers. Pathfinder is an alias.
+- Next knives: max attach distance; merge lane graph; move Thing by distance.
 - Dedicated pinned scheduler core was removed. No core affinity. Virtual scheduling only.
 - GPU backend still unavailable; GPU jobs wait.
 - Scale: 160x160 nodes, 20k parallel FindPath ~2.7s on 20 threads.
@@ -56,6 +57,4 @@ If continuing gameplay:
 1. Max attach distance for buildings.
 2. Merge lane direction into graph topology.
 3. Move Thing by distance/tick, not waypoint jumps.
-4. Put node-to-node Request on the same queue.
-
 Do not add turning, vehicle types, or Unity presentation unless asked.

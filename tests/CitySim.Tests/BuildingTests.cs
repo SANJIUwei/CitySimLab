@@ -55,8 +55,12 @@ public sealed class BuildingTests
     }
 
     [Fact]
-    public void IssueTo_GivesOriginAndDestinationThenStops()
+    public void TripStarter_RejectsUnattachedBuildings()
     {
+        var net = new RoadNetwork();
+        var n1 = new RoadNode(new World.WorldPosition { x = 0, y = 0, z = 0 }, 1);
+        var n2 = new RoadNode(new World.WorldPosition { x = 10, y = 0, z = 0 }, 2);
+        net.AddSegment(n1, n2, 1);
         var origin = new Building(
             new World.WorldPosition { x = 0, y = 0, z = 0 },
             new World.WorldPosition { x = 0, y = 0, z = 0 });
@@ -64,9 +68,11 @@ public sealed class BuildingTests
             new World.WorldPosition { x = 10, y = 0, z = 0 },
             new World.WorldPosition { x = 10, y = 0, z = 0 });
 
-        var command = origin.IssueTo(destination);
+        var pathfinder = new Pathfinder(net);
+        var thing = new Thing();
 
-        Assert.Same(origin, command.Origin);
-        Assert.Same(destination, command.Destination);
+        Assert.False(TripStarter.Request(thing, pathfinder, origin, destination));
+        Assert.Equal(0, pathfinder.PendingCount);
+        Assert.Null(thing.Command);
     }
 }

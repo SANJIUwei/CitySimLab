@@ -16,4 +16,4 @@
 
 ## 调用入口
 
-建筑只发 `TripCommand`（A/B），然后不管。`Thing` 把指令交给 `Pathfinder.Submit`，`Process(budget)` 定额处理后把 `Trip` 发回 `Thing.ReceiveRoute`。事物再做局部判定。不直接问 `RoadNetwork`。
+`TripStarter.Request` 发起出行，两端是 `RouteEnd`（建筑门口或路上的点）。`Thing` 排队，`Pathfinder.Process` 定额处理后把 `Trip` 发回。

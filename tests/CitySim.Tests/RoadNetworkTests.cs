@@ -116,6 +116,27 @@ public sealed class RoadNetworkTests
     }
 
     [Fact]
+    public void PlanTrip_OnRoadEnds_DoesNotNeedBuildings()
+    {
+        var net = new RoadNetwork();
+        var n1 = new RoadNode(new World.WorldPosition { x = 0, y = 0, z = 0 }, 1);
+        var n2 = new RoadNode(new World.WorldPosition { x = 10, y = 0, z = 0 }, 2);
+        var n3 = new RoadNode(new World.WorldPosition { x = 20, y = 0, z = 0 }, 3);
+        var s12 = net.AddSegment(n1, n2, 10);
+        var s23 = net.AddSegment(n2, n3, 10);
+        var from = RouteEnd.OnRoad(new RoadAttachment(s12, 0.2f));
+        var to = RouteEnd.OnRoad(new RoadAttachment(s23, 0.8f));
+
+        var trip = net.PlanTrip(from, to);
+
+        Assert.False(trip.SameSegment);
+        Assert.Equal(new long[] { 1, 2, 3 }, trip.Global.NodeIds);
+        Assert.Same(from, trip.From);
+        Assert.Same(to, trip.To);
+        Assert.Equal(from.Access.x, trip.Departure.Entrance.x);
+    }
+
+    [Fact]
     public void FindEntryNode_UsesCachedTNotStraightLineToEntrance()
     {
         var net = new RoadNetwork();

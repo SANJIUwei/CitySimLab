@@ -52,25 +52,6 @@ public class Building
     {
         Attachment = new RoadAttachment(segment, t);
     }
-
-    // 建筑只发 A/B，然后不管。事物拿着这条指令去排队求路。
-    public TripCommand IssueTo(Building destination)
-    {
-        return new TripCommand(this, destination);
-    }
-}
-
-// 出行指令：起点建筑是 A，终点建筑是 B。不是路线，也不持有寻路结果。
-public sealed class TripCommand
-{
-    public Building Origin { get; }
-    public Building Destination { get; }
-
-    public TripCommand(Building origin, Building destination)
-    {
-        Origin = origin;
-        Destination = destination;
-    }
 }
 
 // 建筑在这段路上的位置：t=0 是 StartNode，t=1 是 EndNode。最后一百米按这个比例走，不再问图。

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-// 全局图只挂 Node 和 Segment。载具排队求路以后再做，现在每次调用都是同步算完。
+// 全局图只挂 Node 和 Segment。排队在 Pathfinder，这里只算图。
 public class RoadNetwork
 {
     public List<RoadNode> Nodes { get; } = new List<RoadNode>();
@@ -10,8 +10,12 @@ public class RoadNetwork
     readonly Dictionary<long, RoadNode> _nodesById = new Dictionary<long, RoadNode>();
     readonly Dictionary<long, List<(long to, double cost)>> _adj = new Dictionary<long, List<(long to, double cost)>>();
 
+    [ThreadStatic] static PathScratch? t_scratch;
+
     public void AddNode(RoadNode node)
     {
+        if (node.ID < 0 || node.ID > 4_000_000)
+            throw new InvalidOperationException("Node ID must be a compact non-negative integer");
         if (_nodesById.ContainsKey(node.ID))
             throw new InvalidOperationException("Node ID already exists");
         Nodes.Add(node);
@@ -19,6 +23,8 @@ public class RoadNetwork
         if (!_adj.ContainsKey(node.ID))
             _adj[node.ID] = new List<(long, double)>();
     }
+
+    public bool TryGetNode(long id, out RoadNode node) => _nodesById.TryGetValue(id, out node);
 
     public RoadSegment AddSegment(RoadNode start, RoadNode end, double cost = 1.0)
     {
@@ -32,37 +38,47 @@ public class RoadNetwork
         return segment;
     }
 
-    // 入口 Node 只看缓存的 t：靠近 0 走 Start，靠近 1 走 End。不用直线距离，避免门口歪了就上错端。
+    public RoadNode FindEntryNode(RoadAttachment attachment)
+    {
+        return attachment.T <= 0.5f ? attachment.Segment.StartNode : attachment.Segment.EndNode;
+    }
+
     public RoadNode FindEntryNode(Building building)
     {
         if (building.Attachment == null)
             throw new InvalidOperationException("Building is not attached to a segment");
-        var attachment = building.Attachment;
-        return attachment.T <= 0.5f ? attachment.Segment.StartNode : attachment.Segment.EndNode;
+        return FindEntryNode(building.Attachment);
     }
 
     public GlobalPath FindPath(long startId, long endId)
     {
-        var dist = new Dictionary<long, double>();
-        var prev = new Dictionary<long, long>();
-        var open = new List<long>();
-        foreach (var id in _nodesById.Keys)
-            dist[id] = double.PositiveInfinity;
-        if (!dist.ContainsKey(startId) || !dist.ContainsKey(endId))
+        if (!_nodesById.ContainsKey(startId) || !_nodesById.ContainsKey(endId))
             return GlobalPath.None;
-        dist[startId] = 0;
-        open.Add(startId);
+        if (startId == endId)
+            return new GlobalPath(new List<long> { startId }, 0);
 
-        while (open.Count > 0)
+        var scratch = GetScratch();
+        scratch.Ensure((int)Math.Max(startId, endId));
+        scratch.EnsureCapacity(Nodes.Count);
+        scratch.Stamp++;
+        if (scratch.Stamp == int.MaxValue)
         {
-            int bestIndex = 0;
-            for (int i = 1; i < open.Count; i++)
-            {
-                if (dist[open[i]] < dist[open[bestIndex]])
-                    bestIndex = i;
-            }
-            long u = open[bestIndex];
-            open.RemoveAt(bestIndex);
+            Array.Clear(scratch.Seen, 0, scratch.Seen.Length);
+            scratch.Stamp = 1;
+        }
+
+        int startIndex = (int)startId;
+        int endIndex = (int)endId;
+        scratch.Seen[startIndex] = scratch.Stamp;
+        scratch.Dist[startIndex] = 0;
+        scratch.Heap.Clear();
+        HeapPush(scratch, 0, startId);
+
+        while (scratch.Heap.Count > 0)
+        {
+            var (du, u) = HeapPop(scratch);
+            if (scratch.Seen[(int)u] == scratch.Stamp && du != scratch.Dist[(int)u])
+                continue;
             if (u == endId)
                 break;
             if (!_adj.TryGetValue(u, out var edges))
@@ -70,63 +86,141 @@ public class RoadNetwork
             for (int i = 0; i < edges.Count; i++)
             {
                 var (v, cost) = edges[i];
-                double alt = dist[u] + cost;
-                if (alt < dist[v])
+                int vi = (int)v;
+                scratch.Ensure(vi);
+                double alt = du + cost;
+                if (scratch.Seen[vi] != scratch.Stamp || alt < scratch.Dist[vi])
                 {
-                    dist[v] = alt;
-                    prev[v] = u;
-                    if (!open.Contains(v))
-                        open.Add(v);
+                    scratch.Seen[vi] = scratch.Stamp;
+                    scratch.Dist[vi] = alt;
+                    scratch.Prev[vi] = u;
+                    HeapPush(scratch, alt, v);
                 }
             }
         }
 
-        if (double.IsPositiveInfinity(dist[endId]))
+        if (scratch.Seen[endIndex] != scratch.Stamp)
             return GlobalPath.None;
 
         var ids = new List<long>();
-        for (long at = endId; ; at = prev[at])
+        for (long at = endId; ; at = scratch.Prev[(int)at])
         {
             ids.Add(at);
             if (at == startId) break;
-            if (!prev.ContainsKey(at))
-                return GlobalPath.None;
         }
         ids.Reverse();
-        return new GlobalPath(ids, dist[endId]);
+        return new GlobalPath(ids, scratch.Dist[endIndex]);
     }
 
-    // 建筑A到建筑B：先定两端入口 Node，再跑全局带权最短路。局部进出段不在这里算。
+    static PathScratch GetScratch()
+    {
+        var scratch = t_scratch;
+        if (scratch == null)
+        {
+            scratch = new PathScratch();
+            t_scratch = scratch;
+        }
+        return scratch;
+    }
+
+    static void HeapPush(PathScratch scratch, double dist, long id)
+    {
+        scratch.Heap.Add((dist, id));
+        int i = scratch.Heap.Count - 1;
+        while (i > 0)
+        {
+            int p = (i - 1) / 2;
+            if (scratch.Heap[p].dist <= scratch.Heap[i].dist)
+                break;
+            (scratch.Heap[p], scratch.Heap[i]) = (scratch.Heap[i], scratch.Heap[p]);
+            i = p;
+        }
+    }
+
+    static (double dist, long id) HeapPop(PathScratch scratch)
+    {
+        var root = scratch.Heap[0];
+        int last = scratch.Heap.Count - 1;
+        scratch.Heap[0] = scratch.Heap[last];
+        scratch.Heap.RemoveAt(last);
+        int i = 0;
+        while (true)
+        {
+            int l = i * 2 + 1;
+            int r = l + 1;
+            if (l >= scratch.Heap.Count)
+                break;
+            int s = r < scratch.Heap.Count && scratch.Heap[r].dist < scratch.Heap[l].dist ? r : l;
+            if (scratch.Heap[i].dist <= scratch.Heap[s].dist)
+                break;
+            (scratch.Heap[i], scratch.Heap[s]) = (scratch.Heap[s], scratch.Heap[i]);
+            i = s;
+        }
+        return root;
+    }
+
+    sealed class PathScratch
+    {
+        public int Stamp;
+        public int[] Seen = Array.Empty<int>();
+        public double[] Dist = Array.Empty<double>();
+        public long[] Prev = Array.Empty<long>();
+        public List<(double dist, long id)> Heap = new List<(double, long)>();
+
+        public void Ensure(int id)
+        {
+            int n = id + 1;
+            if (Seen.Length >= n)
+                return;
+            int size = Math.Max(n, Math.Max(64, Seen.Length * 2));
+            Array.Resize(ref Seen, size);
+            Array.Resize(ref Dist, size);
+            Array.Resize(ref Prev, size);
+        }
+
+        public void EnsureCapacity(int nodeCount)
+        {
+            if (nodeCount <= 0)
+                return;
+            Ensure(nodeCount);
+        }
+    }
+
+    public GlobalPath FindPath(RouteEnd from, RouteEnd to)
+    {
+        return FindPath(FindEntryNode(from.Attachment).ID, FindEntryNode(to.Attachment).ID);
+    }
+
     public GlobalPath FindPath(Building from, Building to)
     {
-        var a = FindEntryNode(from);
-        var b = FindEntryNode(to);
-        return FindPath(a.ID, b.ID);
+        return FindPath(RouteEnd.FromBuilding(from), RouteEnd.FromBuilding(to));
     }
 
-    // 同一段：只走局部 t→t，不进全局图。跨段：出门→t→入口 Node，全局最短路，出口 Node→t→进门。
-    public Trip PlanTrip(Building from, Building to)
+    // 同一段：只走局部 t→t。跨段：Access→t→入口 Node，全局最短路，出口 Node→t→Access。
+    public Trip PlanTrip(RouteEnd from, RouteEnd to)
     {
-        if (from.Attachment == null || to.Attachment == null)
-            throw new InvalidOperationException("Building is not attached to a segment");
-
         var fromOnRoad = from.Attachment.Segment.PointAt(from.Attachment.T);
         var toOnRoad = to.Attachment.Segment.PointAt(to.Attachment.T);
 
         if (ReferenceEquals(from.Attachment.Segment, to.Attachment.Segment))
         {
             double localCost = from.Attachment.Segment.LengthBetween(from.Attachment.T, to.Attachment.T);
-            var departure = new LocalDeparture(from.Entrance, from.Attachment, null);
-            var approach = new LocalApproach(null, to.Attachment, to.Entrance);
+            var departure = new LocalDeparture(from.Access, from.Attachment, null);
+            var approach = new LocalApproach(null, to.Attachment, to.Access);
             return new Trip(from, to, sameSegment: true, GlobalPath.LocalOnly(localCost), fromOnRoad, toOnRoad, departure, approach);
         }
 
         var global = FindPath(from, to);
-        RoadNode? entryNode = global.Found ? FindEntryNode(from) : null;
-        RoadNode? exitNode = global.Found ? FindEntryNode(to) : null;
-        var startLocal = new LocalDeparture(from.Entrance, from.Attachment, entryNode);
-        var endLocal = new LocalApproach(exitNode, to.Attachment, to.Entrance);
+        RoadNode? entryNode = global.Found ? FindEntryNode(from.Attachment) : null;
+        RoadNode? exitNode = global.Found ? FindEntryNode(to.Attachment) : null;
+        var startLocal = new LocalDeparture(from.Access, from.Attachment, entryNode);
+        var endLocal = new LocalApproach(exitNode, to.Attachment, to.Access);
         return new Trip(from, to, sameSegment: false, global, fromOnRoad, toOnRoad, startLocal, endLocal);
+    }
+
+    public Trip PlanTrip(Building from, Building to)
+    {
+        return PlanTrip(RouteEnd.FromBuilding(from), RouteEnd.FromBuilding(to));
     }
 }
 
@@ -147,11 +241,11 @@ public sealed class GlobalPath
     }
 }
 
-// 一次出行：路上的两个接入点 + 可选的全局 Node 序列。载具还没写，这里只给出该走哪一段。
+// 一次出行：两端是 RouteEnd，不是建筑。路上的车可以从路上某点出发。
 public sealed class Trip
 {
-    public Building From { get; }
-    public Building To { get; }
+    public RouteEnd From { get; }
+    public RouteEnd To { get; }
     public bool SameSegment { get; }
     public GlobalPath Global { get; }
     public World.WorldPosition FromOnRoad { get; }
@@ -162,8 +256,8 @@ public sealed class Trip
     public bool Reachable => SameSegment || Global.Found;
 
     public Trip(
-        Building from,
-        Building to,
+        RouteEnd from,
+        RouteEnd to,
         bool sameSegment,
         GlobalPath global,
         World.WorldPosition fromOnRoad,

@@ -1,53 +1,66 @@
 using System.Collections.Generic;
 
-// 所有需要寻路的物体只调这里。建筑不求路；事物提交请求、等回传。
+public static class ComputeCategories
+{
+    public const string Path = "path";
+}
+
+// 寻路只向调度器交 Category=path 的作业，自己不抢核。
 public class Pathfinder
 {
     readonly RoadNetwork _network;
-    readonly Queue<PathRequest> _queue = new Queue<PathRequest>();
+    readonly ComputeScheduler _scheduler;
 
-    public int PendingCount => _queue.Count;
+    public int PendingCount => _scheduler.PendingIn(ComputeCategories.Path);
+    public ComputeScheduler Scheduler => _scheduler;
 
-    public Pathfinder(RoadNetwork network)
+    public Pathfinder(RoadNetwork network, ComputeScheduler? scheduler = null)
     {
         _network = network;
+        _scheduler = scheduler ?? new ComputeScheduler(dedicatedCore: false);
     }
 
-    // 事物把建筑给的 A/B 指令交进来排队。不立刻算。
-    public void Submit(Thing thing, TripCommand command)
+    public void Submit(Thing thing, TripCommand command, ComputePriority priority = ComputePriority.High)
     {
-        _queue.Enqueue(new PathRequest(thing, command));
+        _scheduler.Submit(new PathJob(_network, thing, command, priority));
     }
 
-    // 每帧处理定额条。算完把路线发回给事物。
     public int Process(int budget)
     {
-        int processed = 0;
-        while (processed < budget && _queue.Count > 0)
-        {
-            var request = _queue.Dequeue();
-            var trip = _network.PlanTrip(request.Command.Origin, request.Command.Destination);
-            request.Thing.ReceiveRoute(trip);
-            processed++;
-        }
-        return processed;
+        return _scheduler.Tick(ComputeCategories.Path, budget);
     }
 
-    // 已经在图上的物体：只要 Node 序列。仍同步，给测试和以后路上的车用。
     public GlobalPath Request(long startNodeId, long endNodeId)
     {
         return _network.FindPath(startNodeId, endNodeId);
     }
 
-    sealed class PathRequest
+    sealed class PathJob : ComputeJob
     {
-        public Thing Thing { get; }
-        public TripCommand Command { get; }
+        readonly RoadNetwork _network;
+        readonly Thing _thing;
+        readonly TripCommand _command;
+        Trip? _trip;
 
-        public PathRequest(Thing thing, TripCommand command)
+        public PathJob(RoadNetwork network, Thing thing, TripCommand command, ComputePriority priority)
+            : base(ComputeCategories.Path, ComputeLane.Cpu, priority)
         {
-            Thing = thing;
-            Command = command;
+            _network = network;
+            _thing = thing;
+            _command = command;
+        }
+
+        public override void Execute()
+        {
+            _trip = _network.PlanTrip(_command.Origin, _command.Destination);
+        }
+
+        public override void Apply()
+        {
+            if (_trip == null)
+                return;
+            _thing.ReceiveRoute(_trip);
+            _thing.PrepareTravel(_network);
         }
     }
 }

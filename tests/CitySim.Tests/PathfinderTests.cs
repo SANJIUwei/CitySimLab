@@ -23,8 +23,7 @@ public sealed class PathfinderTests
 
         var pathfinder = new Pathfinder(net);
         var thing = new Thing();
-        thing.AcceptCommand(houseA.IssueTo(houseB));
-        thing.RequestRoute(pathfinder);
+        Assert.True(TripStarter.Request(thing, pathfinder, houseA, houseB));
 
         Assert.True(thing.WaitingForRoute);
         Assert.Null(thing.Route);
@@ -62,10 +61,8 @@ public sealed class PathfinderTests
         var pathfinder = new Pathfinder(net);
         var first = new Thing();
         var second = new Thing();
-        first.AcceptCommand(houseA.IssueTo(houseB));
-        second.AcceptCommand(houseA.IssueTo(houseB));
-        first.RequestRoute(pathfinder);
-        second.RequestRoute(pathfinder);
+        Assert.True(TripStarter.Request(first, pathfinder, houseA, houseB));
+        Assert.True(TripStarter.Request(second, pathfinder, houseA, houseB));
 
         Assert.Equal(1, pathfinder.Process(1));
         Assert.NotNull(first.Route);

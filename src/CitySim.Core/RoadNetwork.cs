@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-// 全局图只挂 Node 和 Segment。排队在 Pathfinder，这里只算图。
+// 全局图只挂 Node 和 Segment。排队在 PathCenter，计算作业交给 Scheduler。
 public class RoadNetwork
 {
     public List<RoadNode> Nodes { get; } = new List<RoadNode>();

@@ -68,11 +68,11 @@ public sealed class BuildingTests
             new World.WorldPosition { x = 10, y = 0, z = 0 },
             new World.WorldPosition { x = 10, y = 0, z = 0 });
 
-        var pathfinder = new Pathfinder(net);
+        var center = new PathCenter(net);
         var thing = new Thing();
 
-        Assert.False(TripStarter.Request(thing, pathfinder, origin, destination));
-        Assert.Equal(0, pathfinder.PendingCount);
+        Assert.False(TripStarter.Request(thing, center, origin, destination));
+        Assert.Equal(0, center.PendingCount);
         Assert.Null(thing.Command);
     }
 }

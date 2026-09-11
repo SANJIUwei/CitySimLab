@@ -77,6 +77,25 @@ public sealed class ComputeSchedulerTests
     }
 
     [Fact]
+    public void Tick_AsksManagedPathCenterToDispatchInbox()
+    {
+        var net = new RoadNetwork();
+        var a = new RoadNode(new World.WorldPosition { x = 0, y = 0, z = 0 }, 1);
+        var b = new RoadNode(new World.WorldPosition { x = 10, y = 0, z = 0 }, 2);
+        net.AddSegment(a, b, 1);
+        var scheduler = new ComputeScheduler();
+        var center = new PathCenter(net, scheduler);
+        GlobalPath? path = null;
+        center.Enqueue(1, 2, p => path = p);
+
+        Assert.Equal(1, center.Inbox);
+        Assert.Equal(1, scheduler.Tick(ComputeCategories.Path, 1));
+        Assert.Equal(0, center.Inbox);
+        Assert.True(path!.Found);
+        Assert.Equal(new long[] { 1, 2 }, path.NodeIds);
+    }
+
+    [Fact]
     public void DedicatedCore_StillAppliesOnCaller()
     {
         using var scheduler = new ComputeScheduler(dedicatedCore: true);

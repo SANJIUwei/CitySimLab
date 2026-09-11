@@ -75,6 +75,14 @@ public abstract class ComputeJob : IComputeJob
     }
 }
 
+// 被调度器管理的业务中心：自己收请求、自己排队，调度器只问它要不要交出计算作业。
+public interface IComputeCenter
+{
+    string Category { get; }
+    int Inbox { get; }
+    int Dispatch(int maxJobs);
+}
+
 public interface IComputeBackend
 {
     string Name { get; }
@@ -129,6 +137,7 @@ public sealed class ComputeScheduler : IDisposable
     readonly IComputeBackend _gpu;
     readonly PriorityBucket[] _buckets = new PriorityBucket[11];
     readonly Queue<IComputeJob> _gpuWaiting = new Queue<IComputeJob>();
+    readonly List<IComputeCenter> _centers = new List<IComputeCenter>();
     readonly object _gate = new object();
     readonly ComputeHost? _host;
 
@@ -181,6 +190,15 @@ public sealed class ComputeScheduler : IDisposable
         get { lock (_gate) return _gpuWaiting.Count; }
     }
 
+    public void Manage(IComputeCenter center)
+    {
+        lock (_gate)
+        {
+            if (!_centers.Contains(center))
+                _centers.Add(center);
+        }
+    }
+
     public void Submit(IComputeJob job)
     {
         lock (_gate)
@@ -215,10 +233,26 @@ public sealed class ComputeScheduler : IDisposable
     {
         if (maxJobs <= 0)
             return 0;
+        DispatchCenters(maxJobs, category);
         TryFlushGpu();
         if (_host != null)
             return PumpDedicated(maxJobs, category);
         return PumpInline(maxJobs, category);
+    }
+
+    void DispatchCenters(int maxJobs, string? category)
+    {
+        IComputeCenter[] snapshot;
+        lock (_gate)
+            snapshot = _centers.ToArray();
+        int remaining = maxJobs;
+        for (int i = 0; i < snapshot.Length && remaining > 0; i++)
+        {
+            var center = snapshot[i];
+            if (category != null && center.Category != category)
+                continue;
+            remaining -= center.Dispatch(remaining);
+        }
     }
 
     int PumpInline(int maxJobs, string? category)

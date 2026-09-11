@@ -52,10 +52,10 @@ public sealed class ThingTravelTests
 
     static Thing Travel(RoadNetwork net, Building from, Building to)
     {
-        var pathfinder = new Pathfinder(net);
+        var center = new PathCenter(net);
         var thing = new Thing();
-        Assert.True(TripStarter.Request(thing, pathfinder, from, to));
-        pathfinder.Process(1);
+        Assert.True(TripStarter.Request(thing, center, from, to));
+        center.Process(1);
         return thing;
     }
 }

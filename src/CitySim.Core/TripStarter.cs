@@ -35,26 +35,26 @@ public static class TripStarter
 
     public static bool Request(
         Thing thing,
-        Pathfinder pathfinder,
+        PathCenter pathCenter,
         RouteEnd from,
         RouteEnd to,
         ComputePriority priority = ComputePriority.High)
     {
         thing.AcceptCommand(new TripCommand(from, to));
-        thing.RequestRoute(pathfinder, priority);
+        thing.RequestRoute(pathCenter, priority);
         return true;
     }
 
     public static bool Request(
         Thing thing,
-        Pathfinder pathfinder,
+        PathCenter pathCenter,
         Building from,
         Building to,
         ComputePriority priority = ComputePriority.High)
     {
         if (from.Attachment == null || to.Attachment == null)
             return false;
-        return Request(thing, pathfinder, RouteEnd.FromBuilding(from), RouteEnd.FromBuilding(to), priority);
+        return Request(thing, pathCenter, RouteEnd.FromBuilding(from), RouteEnd.FromBuilding(to), priority);
     }
 }
 

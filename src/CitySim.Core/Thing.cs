@@ -29,14 +29,14 @@ public class Thing
         ClearTravel();
     }
 
-    public void RequestRoute(Pathfinder pathfinder, ComputePriority priority = ComputePriority.High)
+    public void RequestRoute(PathCenter pathCenter, ComputePriority priority = ComputePriority.High)
     {
         if (Command == null)
             return;
         WaitingForRoute = true;
         Route = null;
         ClearTravel();
-        pathfinder.Submit(this, Command, priority);
+        pathCenter.Enqueue(this, Command, priority);
     }
 
     public void ReceiveRoute(Trip trip)

@@ -1,0 +1,52 @@
+# 2026-09-11 工作机会话结束（回家接着看这份）
+
+地点：工作机 `E:\Myself\CitySimLab`
+提交：推送后以远程 `main` 为准
+阅读对象：用户 + 下一班 AI
+
+## 一句话
+
+逻辑层已经能从 A 走到 B；今天把「谁分配算力」从玩法里拆出来了。回家先 `git pull --ff-only`。
+
+## 今天做成了什么
+
+1. **出行入口**  
+   建筑不再 `IssueTo`。`TripStarter.Request` 发起。未接入直接失败。
+
+2. **路线解绑建筑**  
+   `Trip` / `TripCommand` 两端是 `RouteEnd`（挂接点 + Access）。路上的点用 `RouteEnd.OnRoad`。
+
+3. **事物会走**  
+   `Thing` 收到路线后拼步骤表，`Advance()` 跳到下一个逻辑点。还没有速度、没有按距离挪。
+
+4. **规模**  
+   对照天际线：人口约百万，原版在途载具约 16384。测试图 160×160 路口、2 万次寻路。单线程太慢；CPU 并行后约 2.7 秒。
+
+5. **通用调度器 `ComputeScheduler`**  
+   各系统只交作业。作业有 Category、Lane、0–100 分数。按分数段排队，虚拟运行时间分配，低优先级不会饿死。  
+   **已取消固定绑一核做调度。** 现在是虚拟调度：挑活和工人都在普通线程/并行里完成，主线程只 `Apply`。  
+   GPU 还没接，Gpu 作业在等待队列。  
+   `Pathfinder` 只排队、按 budget Tick；真正的 `PlanTrip` 在作业的 `Execute` 里。
+
+## 大进度
+
+- 站住：坐标、Node/Segment/Lane、建筑挂路、出行流水线、调度器骨架
+- 停在：逻辑能走通，不是会自己转的城
+- 先不做：转向、标志、画面、天际线 vs 狂热运输定案
+
+## 回家建议下一刀（按卡住扩展的顺序）
+
+1. 接入加最大距离，太远不挂（现在 `AttachNearest` 扫全图）
+2. 车道和图并成一份拓扑（单行以后会裂）
+3. 事物按距离/节拍移动，不要一次跳一个路点
+4. `Pathfinder.Request(node, node)` 并进同一条队列
+
+不要一回来就加车种、转向、Unity 画面。
+
+## 一次出行
+
+```
+RouteEnd → TripStarter → Pathfinder 交 path 作业 → ComputeScheduler
+→ 同一段 t→t；跨段 出门→入口 Node→全局最短路→出口 Node→进门
+→ Thing.Advance 跳点
+```

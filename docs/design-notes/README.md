@@ -24,3 +24,4 @@
 - `2026-09-11-skylines-scale.md`：百万人口 vs 路上载具上限；160×160 图上 2 万次寻路。
 - `2026-09-11-compute-scheduler.md`：通用算力调度合同；寻路只是其中一个 Category。
 - `2026-09-11-session-work.md`：2026-09-11 工作机结束摘要，回家先读这份。
+- `2026-09-12-gpu-pathfinding-benchmark.md`：RTX 3060 Laptop GPU 上 2000 次 GPU 寻路结果；端到端瓶颈主要是 readback。

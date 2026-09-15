@@ -25,19 +25,19 @@ public sealed class ComputeSchedulerTests
     }
 
     [Fact]
-    public void GpuJobs_WaitInsteadOfBlockingCpuLane()
+    public void DefaultBackend_IsCpuParallel()
     {
         var scheduler = new ComputeScheduler();
-        var cpuDone = new List<int>();
-        scheduler.Submit(new FlagJob("sim", cpuDone, 1));
-        scheduler.Submit(new GpuNopJob());
+        Assert.Equal("cpu-parallel", scheduler.Backend.Name);
+        Assert.True(scheduler.Backend.Available);
+    }
 
-        int n = scheduler.Tick(8);
-
-        Assert.Equal(1, n);
-        Assert.Single(cpuDone);
-        Assert.Equal(1, scheduler.GpuWaiting);
-        Assert.False(scheduler.GpuBackend.Available);
+    [Fact]
+    public void GpuDeferredBackend_StaysOptionalAndUnavailable()
+    {
+        var gpu = new GpuDeferredBackend();
+        Assert.False(gpu.Available);
+        Assert.Throws<NotSupportedException>(() => gpu.ExecuteBatch(Array.Empty<IComputeJob>()));
     }
 
     [Fact]
@@ -132,7 +132,7 @@ public sealed class ComputeSchedulerTests
         readonly int _id;
 
         public FlagJob(string category, List<int> done, int id, ComputePriority priority = ComputePriority.Normal)
-            : base(category, ComputeLane.Cpu, priority)
+            : base(category, priority)
         {
             _done = done;
             _id = id;
@@ -141,12 +141,6 @@ public sealed class ComputeSchedulerTests
         public override void Execute() { }
 
         public override void Apply() => _done.Add(_id);
-    }
-
-    sealed class GpuNopJob : ComputeJob
-    {
-        public GpuNopJob() : base("gpu-wait", ComputeLane.Gpu) { }
-        public override void Execute() { }
     }
 
     sealed class ThreadProbeJob : ComputeJob

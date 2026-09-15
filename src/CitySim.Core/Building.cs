@@ -22,7 +22,7 @@ public class Building
         AttachNearest(network);
     }
 
-    public bool AttachNearest(RoadNetwork network)
+    public bool AttachNearest(RoadNetwork network, float maxDistance = float.PositiveInfinity)
     {
         RoadSegment? best = null;
         float bestT = 0f;
@@ -32,6 +32,7 @@ public class Building
             var segment = network.Segments[i];
             float t = segment.ClosestT(Entrance);
             double d = segment.DistanceTo(Entrance);
+            if (d > maxDistance) continue; // 超过最大距离跳过
             if (d < bestDist)
             {
                 bestDist = d;
@@ -41,7 +42,10 @@ public class Building
         }
 
         if (best == null)
+        {
+            Attachment = null;
             return false;
+        }
 
         Attachment = new RoadAttachment(best, bestT);
         return true;

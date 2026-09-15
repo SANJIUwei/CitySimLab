@@ -90,7 +90,7 @@ sealed class PathSearchJob : ComputeJob
     Trip? _trip;
 
     public PathSearchJob(RoadNetwork network, Thing thing, TripCommand command, ComputePriority priority)
-        : base(ComputeCategories.Path, ComputeLane.Cpu, priority)
+        : base(ComputeCategories.Path, priority)
     {
         _network = network;
         _thing = thing;
@@ -120,7 +120,7 @@ sealed class NodeSearchJob : ComputeJob
     GlobalPath _result = GlobalPath.None;
 
     public NodeSearchJob(RoadNetwork network, long start, long end, Action<GlobalPath> onDone, ComputePriority priority)
-        : base(ComputeCategories.Path, ComputeLane.Cpu, priority)
+        : base(ComputeCategories.Path, priority)
     {
         _network = network;
         _start = start;

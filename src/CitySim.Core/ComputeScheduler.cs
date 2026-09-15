@@ -5,12 +5,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-public enum ComputeLane
-{
-    Cpu,
-    Gpu
-}
-
 public enum ComputePriority
 {
     Low = 0,
@@ -21,7 +15,6 @@ public enum ComputePriority
 public interface IComputeJob
 {
     string Category { get; }
-    ComputeLane Lane { get; }
     ComputePriority Priority { get; }
     int PriorityScore { get; }
     int CostHint { get; }
@@ -33,24 +26,21 @@ public interface IComputeJob
 public abstract class ComputeJob : IComputeJob
 {
     public string Category { get; }
-    public ComputeLane Lane { get; }
     public ComputePriority Priority { get; }
     public int PriorityScore { get; }
     public int CostHint { get; }
 
     protected ComputeJob(
         string category,
-        ComputeLane lane = ComputeLane.Cpu,
         ComputePriority priority = ComputePriority.Normal,
         int costHint = 1)
-        : this(category, ScoreOf(priority), lane, costHint)
+        : this(category, ScoreOf(priority), costHint)
     {
     }
 
-    protected ComputeJob(string category, int priorityScore, ComputeLane lane = ComputeLane.Cpu, int costHint = 1)
+    protected ComputeJob(string category, int priorityScore, int costHint = 1)
     {
         Category = category;
-        Lane = lane;
         PriorityScore = Math.Min(100, Math.Max(0, priorityScore));
         CostHint = Math.Max(1, costHint);
         Priority = PriorityScore >= 70 ? ComputePriority.High
@@ -125,7 +115,7 @@ public sealed class GpuDeferredBackend : IComputeBackend
     public void ExecuteBatch(IReadOnlyList<IComputeJob> jobs)
     {
         throw new NotSupportedException(
-            "GPU 尚未接入。接入后与 CPU 同一合同：排队提交、算完回传、主线程只 Apply。");
+            "GPU 后端是可选实验，尚未接到调度器。调度器只排队和分顺序，不决定在 CPU 还是 GPU 上算。");
     }
 }
 
@@ -133,25 +123,21 @@ public sealed class ComputeScheduler : IDisposable
 {
     const double AgeBoostPerSecond = 0.4;
 
-    readonly IComputeBackend _cpu;
-    readonly IComputeBackend _gpu;
+    readonly IComputeBackend _backend;
     readonly PriorityBucket[] _buckets = new PriorityBucket[11];
-    readonly Queue<IComputeJob> _gpuWaiting = new Queue<IComputeJob>();
     readonly List<IComputeCenter> _centers = new List<IComputeCenter>();
     readonly object _gate = new object();
     readonly ComputeHost? _host;
 
-    public IComputeBackend CpuBackend => _cpu;
-    public IComputeBackend GpuBackend => _gpu;
+    // 调度器只排队、分优先级、交批次。默认 CPU；GPU 后端不挂在这里。
+    public IComputeBackend Backend => _backend;
     public bool DedicatedCore { get; }
 
     public ComputeScheduler(
-        IComputeBackend? cpu = null,
-        IComputeBackend? gpu = null,
+        IComputeBackend? backend = null,
         bool dedicatedCore = false)
     {
-        _cpu = cpu ?? new CpuParallelBackend();
-        _gpu = gpu ?? new GpuDeferredBackend();
+        _backend = backend ?? new CpuParallelBackend();
         DedicatedCore = dedicatedCore;
         for (int i = 0; i < _buckets.Length; i++)
             _buckets[i] = new PriorityBucket();
@@ -165,7 +151,7 @@ public sealed class ComputeScheduler : IDisposable
         {
             lock (_gate)
             {
-                int n = _gpuWaiting.Count + (_host?.InFlight ?? 0) + (_host?.DoneCount ?? 0);
+                int n = (_host?.InFlight ?? 0) + (_host?.DoneCount ?? 0);
                 for (int i = 0; i < _buckets.Length; i++)
                     n += _buckets[i].Count;
                 return n;
@@ -185,11 +171,6 @@ public sealed class ComputeScheduler : IDisposable
         return n;
     }
 
-    public int GpuWaiting
-    {
-        get { lock (_gate) return _gpuWaiting.Count; }
-    }
-
     public void Manage(IComputeCenter center)
     {
         lock (_gate)
@@ -202,12 +183,7 @@ public sealed class ComputeScheduler : IDisposable
     public void Submit(IComputeJob job)
     {
         lock (_gate)
-        {
-            if (job.Lane == ComputeLane.Gpu)
-                _gpuWaiting.Enqueue(job);
-            else
-                _buckets[BucketOf(job.PriorityScore)].Enqueue(job);
-        }
+            _buckets[BucketOf(job.PriorityScore)].Enqueue(job);
         _host?.Wake();
     }
 
@@ -219,7 +195,7 @@ public sealed class ComputeScheduler : IDisposable
     {
         if (jobs.Count == 0)
             return;
-        _cpu.ExecuteBatch(jobs);
+        _backend.ExecuteBatch(jobs);
         for (int i = 0; i < jobs.Count; i++)
             jobs[i].Apply();
     }
@@ -234,7 +210,6 @@ public sealed class ComputeScheduler : IDisposable
         if (maxJobs <= 0)
             return 0;
         DispatchCenters(maxJobs, category);
-        TryFlushGpu();
         if (_host != null)
             return PumpDedicated(maxJobs, category);
         return PumpInline(maxJobs, category);
@@ -270,7 +245,7 @@ public sealed class ComputeScheduler : IDisposable
         }
         if (batch.Count == 0)
             return 0;
-        _cpu.ExecuteBatch(batch);
+        _backend.ExecuteBatch(batch);
         for (int i = 0; i < batch.Count; i++)
             batch[i].Apply();
         return batch.Count;
@@ -354,22 +329,6 @@ public sealed class ComputeScheduler : IDisposable
     static double Weight(int score)
     {
         return 0.2 + (score / 100.0) * 3.8;
-    }
-
-    void TryFlushGpu()
-    {
-        List<IComputeJob>? gpuBatch = null;
-        lock (_gate)
-        {
-            if (!_gpu.Available || _gpuWaiting.Count == 0)
-                return;
-            gpuBatch = new List<IComputeJob>(_gpuWaiting.Count);
-            while (_gpuWaiting.Count > 0)
-                gpuBatch.Add(_gpuWaiting.Dequeue());
-        }
-        _gpu.ExecuteBatch(gpuBatch!);
-        for (int i = 0; i < gpuBatch!.Count; i++)
-            gpuBatch[i].Apply();
     }
 
     sealed class PriorityBucket

@@ -17,10 +17,10 @@
 - `2026-09-10-placement-logic-vs-visual-naturalness.md`：天际线依附道路 vs 狂热运输自由摆放；逻辑上依附道路更清晰，但视觉自然感应先记着，等理解更深后再讨论。
 - `2026-09-10-segment-and-lanes.md`：路段从一开始就包含车道；多个起止在车道上，段两端仍是两个节点。
 - `2026-09-10-pathfinding-pipeline.md`：PathCenter 排队，Scheduler 管中心；RouteEnd；局部 t→t / 跨段 Node。
-- `2026-09-11-current-problems.md`：接入半径、车道与图两套拓扑、跳点走路、缓存失效。
+- `2026-09-11-current-problems.md`：活清单。最大距离已 Closed；Open：车道并图、连续移动、缓存失效、没有世界节拍。
 - `2026-09-11-structure-audit.md`：权属拆分现状。
 
-用户可读的进度图：`docs/路网思维导图.md`（大进度 / 小进度）。
+用户可读的进度图：`docs/human/路网思维导图.md`（大进度 / 小进度）。
 - `2026-09-11-skylines-scale.md`：百万人口 vs 路上载具上限；160×160 图上 2 万次寻路。
 - `2026-09-11-compute-scheduler.md`：通用算力调度合同；寻路只是其中一个 Category。
 - `2026-09-11-session-work.md`：2026-09-11 工作机结束摘要，回家先读这份。

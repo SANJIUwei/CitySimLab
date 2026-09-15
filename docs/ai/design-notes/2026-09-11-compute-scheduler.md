@@ -12,7 +12,7 @@
 - 按分数段排队，虚拟运行时间分配；等得久会往前挤，低优先级不饿死。
 - 主线程只 `Apply`。
 - **不绑死一颗物理核。** `dedicatedCore` 仍在代码里，但是过时选项，默认关；Headless 也不再打开。
-- GPU 未接入：Gpu 作业在等待队列。
+- 调度器不管 CPU/GPU。默认后端是 `CpuParallelBackend`。`GpuDeferredBackend` 是可选实验，不挂在调度器上。
 
 ## 寻路
 
@@ -22,4 +22,4 @@
 
 - 不是 Unity Job System，没有依赖图。
 - Tick 仍按条数，不是按毫秒硬切片。
-- GPU 内核还没写。
+- GPU 寻路是家里独立实验，见 `2026-09-12-gpu-pathfinding-benchmark.md`。没接到调度器，先不做。

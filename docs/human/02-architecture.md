@@ -1,0 +1,190 @@
+# 架构
+
+纯 C# 模拟内核。Core 不引用 Unity。
+
+全局图只保存道路。建筑不进图，只缓存 `segment + t`。
+
+## 仓库模块
+
+| 模块 | 负责 | 不负责 |
+|---|---|---|
+| `CitySim.Core` | 规则、数据、计算合同 | 画面、Unity |
+| `CitySim.Headless` | 命令行观察 | 规则本身 |
+| `CitySim.UnityMock` | 少量生命周期概念 | 真实引擎 |
+| `CitySim.Tests` | 验证规则 | 玩法设计 |
+
+## 稳定接口
+
+| 概念 | 作用 |
+|---|---|
+| `RouteEnd` | 路上的一端：`RoadAttachment` + 进出点 |
+| `TripCommand` | 一次出行请求 |
+| `Trip` / `GlobalPath` | 路线结果 |
+| `IComputeCenter` | 业务中心自己排队，调度器来取作业 |
+| `IComputeJob` | `Execute` 计算，`Apply` 回写 |
+| `IComputeBackend` | 怎么算。当前默认 `CpuParallelBackend` |
+
+第二种寻路算法应落在 solver / `FindPath`，不要让 `Thing` 或 `Building` 知道 Dijkstra。
+
+## 依赖
+
+```text
+TripStarter / Building / Thing
+    ↓
+PathCenter
+    ↓
+ComputeScheduler
+    ↓
+IComputeBackend
+```
+
+`PathSearchJob` 调用 `RoadNetwork.PlanTrip`。`Building` 不依赖调度器。`Thing` 不创建线程。
+
+`RoadNetwork` 目前同时保存数据、邻接表、Dijkstra 和 `PlanTrip`。第二种算法会动这个类。
+
+## 一次出行
+
+```text
+Building / 路上的点
+    ↓
+RouteEnd
+    ↓
+TripStarter.Request
+    ↓
+PathCenter.Enqueue
+    ↓
+ComputeScheduler.Tick
+    ↓
+PathSearchJob.Execute → RoadNetwork.PlanTrip
+    ↓
+Apply → Thing.ReceiveRoute
+    ↓
+Thing.Advance（跳逻辑点）
+```
+
+同一段：局部 t→t。跨段：出门 → 入口 Node → 全局最短路 → 出口 Node → 进门。
+
+## World
+
+坐标。`World.WorldPosition` 和距离。
+
+不负责路网、出行、调度。
+
+## RoadNetwork
+
+保存 Node、Segment，以及 Node 之间的邻接表 `_adj`。提供 `FindPath`、`PlanTrip`。
+
+### 负责
+
+- 路口、路段、车道数据
+- 全局 Dijkstra（`Segment.Cost`）
+- 把两端 `RouteEnd` 拼成 `Trip`
+
+### 不负责
+
+- 排队、线程、GPU
+- 建筑生命周期
+- `Thing` 怎么走
+
+### 现状
+
+`RoadLane` 有 Forward / Reverse。`_adj` 仍一律双向。单行路还对不上。
+
+`Length` 是几何长度。`Cost` 是图权重。两套数。
+
+## Building
+
+门口投影到最近路段，缓存 `RoadAttachment`（`segment + t`）。
+
+### 负责
+
+- `AttachNearest(network, maxDistance = +∞)`：超过最大距离不挂，`Attachment` 为 null
+- `AttachTo(segment, t)`：手工覆盖，不检查距离
+
+### 不负责
+
+- 发起出行（那是 `TripStarter`）
+- 寻路、走路
+
+未接入的楼不能出行。没有路、或最近路太远，都是没挂上。
+
+不切段、不加空间索引。`AttachNearest` 仍扫全部路段。
+
+## PathCenter
+
+寻路请求队列。实现 `IComputeCenter`。
+
+### 负责
+
+- `Enqueue` 收请求
+- `Dispatch` 把作业交给调度器
+- `Process` 向调度器要本 Category 的预算
+
+### 不负责
+
+- 最短路算法
+- 计算预算怎么分
+- 在 CPU 还是 GPU 上算
+
+`Pathfinder` 是旧名，转到 `PathCenter`。点对点 `Request` 也进同一队列。
+
+`PathSearchJob` / `NodeSearchJob` 不属于建筑或载具。当前 `PathSearchJob.Apply` 仍直接写 `Thing`。
+
+## ComputeScheduler
+
+计算任务的排队和顺序。
+
+### 负责
+
+- 优先级（0–100 分，11 个桶）
+- 虚拟运行时间，低优先级不会饿死
+- `Tick` 时先让中心 `Dispatch`，再把批次交给 Backend
+- 主线程只 `Apply`
+
+### 不负责
+
+- 路径规则、Traffic、建筑
+- 决定算法（Dijkstra / A* / GPU kernel）
+- 默认不拥有 GPU 后端
+
+默认 Backend 是 `CpuParallelBackend`。`GpuDeferredBackend` 存在且 `Available = false`，不挂在调度器上。
+
+`dedicatedCore` 仍在代码里，默认关，过时。
+
+## Thing
+
+收到 `Trip` 后拼步骤表。`Advance()` 一次跳一个逻辑点。
+
+没有速度，没有每帧走一段距离，没有世界节拍。
+
+## 计算分层
+
+```text
+业务请求（出行、以后别的 Category）
+    ↓
+IComputeCenter（自己排队）
+    ↓
+ComputeScheduler（预算和顺序）
+    ↓
+IComputeBackend（怎么算）
+    ↓
+Job.Apply（回写结果）
+```
+
+业务对象不创建线程、不 Dispatch GPU。
+
+## 扩展时不该改谁
+
+| 未来变化 | 应改 | 不该改 |
+|---|---|---|
+| 第二种寻路算法 | `RoadNetwork.FindPath` 或独立 solver | `Thing`、`Building` |
+| GPU 寻路进仓库 | 新 Backend + 批处理合同 | Scheduler 的排队规则、玩法对象 |
+| 按距离移动 | `Thing` / 将来的 clock | `PathCenter`、图结构 |
+| 单行路 | `_adj` 与车道方向对齐 | 建筑缓存格式 `segment + t` |
+
+## 暂时不做
+
+- 真实 Unity 工程
+- 转向、标志、画面
+- 建筑进全局图
+- 每条车道再造 Node

@@ -6,9 +6,9 @@ public sealed class PathfinderTests
     public void Request_NodeIds_StillGoesThroughCenterQueue()
     {
         var net = new RoadNetwork();
-        var a = new RoadNode(new World.WorldPosition { x = 0, y = 0, z = 0 }, 1);
-        var b = new RoadNode(new World.WorldPosition { x = 1, y = 0, z = 0 }, 2);
-        var c = new RoadNode(new World.WorldPosition { x = 2, y = 0, z = 0 }, 3);
+        var a = new RoadNode(new WorldPosition { x = 0, y = 0, z = 0 }, 1);
+        var b = new RoadNode(new WorldPosition { x = 1, y = 0, z = 0 }, 2);
+        var c = new RoadNode(new WorldPosition { x = 2, y = 0, z = 0 }, 3);
         net.AddSegment(a, b, 100);
         net.AddSegment(a, c, 1);
         net.AddSegment(c, b, 1);

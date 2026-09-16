@@ -6,11 +6,11 @@ public sealed class ThingTravelTests
     public void Advance_SameSegment_EndsAtDestinationEntrance()
     {
         var net = new RoadNetwork();
-        var n1 = new RoadNode(new World.WorldPosition { x = 0, y = 0, z = 0 }, 1);
-        var n2 = new RoadNode(new World.WorldPosition { x = 10, y = 0, z = 0 }, 2);
+        var n1 = new RoadNode(new WorldPosition { x = 0, y = 0, z = 0 }, 1);
+        var n2 = new RoadNode(new WorldPosition { x = 10, y = 0, z = 0 }, 2);
         var road = net.AddSegment(n1, n2, 10);
-        var a = new Building(new World.WorldPosition { x = 2, y = 1, z = 0 }, new World.WorldPosition { x = 2, y = 0, z = 0 });
-        var b = new Building(new World.WorldPosition { x = 8, y = 1, z = 0 }, new World.WorldPosition { x = 8, y = 0, z = 0 });
+        var a = new Building(new WorldPosition { x = 2, y = 1, z = 0 }, new WorldPosition { x = 2, y = 0, z = 0 });
+        var b = new Building(new WorldPosition { x = 8, y = 1, z = 0 }, new WorldPosition { x = 8, y = 0, z = 0 });
         a.AttachTo(road, 0.2f);
         b.AttachTo(road, 0.8f);
 
@@ -28,13 +28,13 @@ public sealed class ThingTravelTests
     public void Advance_CrossSegment_VisitsGlobalNodesThenDoor()
     {
         var net = new RoadNetwork();
-        var n1 = new RoadNode(new World.WorldPosition { x = 0, y = 0, z = 0 }, 1);
-        var n2 = new RoadNode(new World.WorldPosition { x = 10, y = 0, z = 0 }, 2);
-        var n3 = new RoadNode(new World.WorldPosition { x = 20, y = 0, z = 0 }, 3);
+        var n1 = new RoadNode(new WorldPosition { x = 0, y = 0, z = 0 }, 1);
+        var n2 = new RoadNode(new WorldPosition { x = 10, y = 0, z = 0 }, 2);
+        var n3 = new RoadNode(new WorldPosition { x = 20, y = 0, z = 0 }, 3);
         var s12 = net.AddSegment(n1, n2, 10);
         var s23 = net.AddSegment(n2, n3, 10);
-        var a = new Building(new World.WorldPosition { x = 1, y = 2, z = 0 }, new World.WorldPosition { x = 1, y = 0, z = 0 });
-        var b = new Building(new World.WorldPosition { x = 19, y = 2, z = 0 }, new World.WorldPosition { x = 19, y = 0, z = 0 });
+        var a = new Building(new WorldPosition { x = 1, y = 2, z = 0 }, new WorldPosition { x = 1, y = 0, z = 0 });
+        var b = new Building(new WorldPosition { x = 19, y = 2, z = 0 }, new WorldPosition { x = 19, y = 0, z = 0 });
         a.AttachTo(s12, 0.1f);
         b.AttachTo(s23, 0.9f);
 

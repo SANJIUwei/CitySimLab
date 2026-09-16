@@ -50,9 +50,9 @@ public sealed class PathCenterTests
     public void NodeSearch_GoesThroughCenterQueue()
     {
         var net = new RoadNetwork();
-        var a = new RoadNode(new World.WorldPosition { x = 0, y = 0, z = 0 }, 1);
-        var b = new RoadNode(new World.WorldPosition { x = 1, y = 0, z = 0 }, 2);
-        var c = new RoadNode(new World.WorldPosition { x = 2, y = 0, z = 0 }, 3);
+        var a = new RoadNode(new WorldPosition { x = 0, y = 0, z = 0 }, 1);
+        var b = new RoadNode(new WorldPosition { x = 1, y = 0, z = 0 }, 2);
+        var c = new RoadNode(new WorldPosition { x = 2, y = 0, z = 0 }, 3);
         net.AddSegment(a, b, 100);
         net.AddSegment(a, c, 1);
         net.AddSegment(c, b, 1);
@@ -87,8 +87,8 @@ public sealed class PathCenterTests
     static RoadNetwork TwoNodeNetwork(out RoadNode n1, out RoadNode n2, out RoadSegment segment)
     {
         var net = new RoadNetwork();
-        n1 = new RoadNode(new World.WorldPosition { x = 0, y = 0, z = 0 }, 1);
-        n2 = new RoadNode(new World.WorldPosition { x = 10, y = 0, z = 0 }, 2);
+        n1 = new RoadNode(new WorldPosition { x = 0, y = 0, z = 0 }, 1);
+        n2 = new RoadNode(new WorldPosition { x = 10, y = 0, z = 0 }, 2);
         segment = net.AddSegment(n1, n2, 10);
         return net;
     }
@@ -96,8 +96,8 @@ public sealed class PathCenterTests
     static Building House(float x, float y, RoadSegment segment, float t)
     {
         var building = new Building(
-            new World.WorldPosition { x = x, y = y + 2, z = 0 },
-            new World.WorldPosition { x = x, y = y, z = 0 });
+            new WorldPosition { x = x, y = y + 2, z = 0 },
+            new WorldPosition { x = x, y = y, z = 0 });
         building.AttachTo(segment, t);
         return building;
     }

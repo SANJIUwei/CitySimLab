@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 
+namespace CitySim.Core;
+
 // 图上的一条边：永远两个端点。多车道、多方向是边上的 Lane，不要为此再拆出更多 Node。
 public class RoadSegment
 {
@@ -22,17 +24,16 @@ public class RoadSegment
         StartNode = startNode;
         EndNode = endNode;
         Cost = cost;
-        var world = new World();
-        Length = world.Distance(startNode.Position, endNode.Position);
+        Length = WorldPosition.Distance(startNode.Position, endNode.Position);
         if (Length == 0)
             Length = cost;
     }
 
     // 局部走段时按 t 插值。不是寻路搜索，只是把缓存的比例变成坐标。
-    public World.WorldPosition PointAt(float t)
+    public WorldPosition PointAt(float t)
     {
         float u = 1f - t;
-        return new World.WorldPosition
+        return new WorldPosition
         {
             x = StartNode.Position.x * u + EndNode.Position.x * t,
             y = StartNode.Position.y * u + EndNode.Position.y * t,
@@ -47,7 +48,7 @@ public class RoadSegment
     }
 
     // 点到这段直线的最近点比例，夹在 [0,1]。零长度段固定 0。不切段。
-    public float ClosestT(World.WorldPosition point)
+    public float ClosestT(WorldPosition point)
     {
         var a = StartNode.Position;
         var b = EndNode.Position;
@@ -63,10 +64,9 @@ public class RoadSegment
         return (float)t;
     }
 
-    public double DistanceTo(World.WorldPosition point)
+    public double DistanceTo(WorldPosition point)
     {
-        var world = new World();
-        return world.Distance(point, PointAt(ClosestT(point)));
+        return WorldPosition.Distance(point, PointAt(ClosestT(point)));
     }
 
     // 从段上创建车道，保证 Lanes 和 lane.Segment 同时写上；不要在外面 new RoadLane 再漏加进列表。

@@ -5,8 +5,8 @@ public sealed class RoadSegmentTests
     [Fact]
     public void TwoWaySegment_HasTwoNodesAndTwoLanes()
     {
-        var start = new RoadNode(new World.WorldPosition { x = 0f, y = 0f, z = 0f }, 1);
-        var end = new RoadNode(new World.WorldPosition { x = 3f, y = 4f, z = 0f }, 2);
+        var start = new RoadNode(new WorldPosition { x = 0f, y = 0f, z = 0f }, 1);
+        var end = new RoadNode(new WorldPosition { x = 3f, y = 4f, z = 0f }, 2);
         var segment = new RoadSegment(start, end);
 
         var forward = segment.AddLane(LaneDirection.Forward);

@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 
+namespace CitySim.Core;
+
 public enum LocalPathKind
 {
     SameSegment,
@@ -15,7 +17,7 @@ public class Thing
     public bool WaitingForRoute { get; private set; }
 
     // 逻辑位置。收到路线后按步骤走，不是每帧搜路。
-    public World.WorldPosition Position { get; private set; }
+    public WorldPosition Position { get; private set; }
     public int StepIndex { get; private set; }
     public bool Arrived { get; private set; }
     readonly List<LocalStep> _itinerary = new List<LocalStep>();
@@ -131,7 +133,7 @@ public class Thing
         _itinerary.Add(step);
     }
 
-    static bool SamePlace(World.WorldPosition a, World.WorldPosition b)
+    static bool SamePlace(WorldPosition a, WorldPosition b)
     {
         return a.x == b.x && a.y == b.y && a.z == b.z;
     }

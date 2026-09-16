@@ -6,7 +6,7 @@ This document is for AI. It is a teaching plan, not an implementation plan. Do n
 
 - User plans and supervises; AI implements, tests, and explains.
 - Do not ask the user to write code. Discuss a slice, then AI edits files.
-- Tests are batched: `docs/ai/06-when-to-test.md`. Roles: `docs/human/07-roles.md`.
+- Tests are batched: `docs/ai/06-when-to-test.md`. Roles: `docs/human/分工.md`.
 - Every slice must have objective evidence: a file, a command result, or a test run.
 - Keep implementations small enough to review. Do not build the whole city at once.
 - Record the user's design thoughts in Simplified Chinese by default.
@@ -25,8 +25,8 @@ Focus the next teaching discussions on road/building separation:
 
 | Evidence | What it supports | Local action for AI |
 |---|---|---|
-| `docs/human/00-learning-contract.md` | The project is learning-first and error-driven. | Keep tasks small; make the user predict and observe. |
-| `docs/human/02-architecture.md` | Core rules stay independent from Unity. | Put guidance around `CitySim.Core`, `CitySim.Headless`, and tests. |
+| `docs/human/学习契约.md` | The project is learning-first and error-driven. | Keep tasks small; make the user predict and observe. |
+| `docs/human/架构.md` | Core rules stay independent from Unity. | Put guidance around `CitySim.Core`, `CitySim.Headless`, and tests. |
 | `docs/ai/design-notes/2026-09-01-road-network-and-building-access.md` | User's current road graph and building access reasoning. | Preserve continuity; use it for questions, not immediate implementation. |
 | `tools/verify.ps1` | The repo has a repeatable build/test/run check. | Use it as the default session-close verification. |
 | Microsoft .NET CLI docs for `dotnet build`, `dotnet test`, and `dotnet run` | Build, test, and command-line run are standard .NET workflows. | Teach compile/test/run feedback loops before game complexity. |

@@ -16,8 +16,8 @@
 
 | 类型 | 记什么 | 位置 |
 |---|---|---|
-| Architecture | 现在是什么：职责、边界、依赖、接口 | `docs/human/02-architecture.md` |
-| Roadmap | Now / Next / Later / Blocked | `docs/human/01-roadmap.md` |
+| Architecture | 现在是什么：职责、边界、依赖、接口 | `docs/human/架构.md` |
+| Roadmap | Now / Next / Later / Blocked | `docs/human/迭代路线.md` |
 | 进度图 | 给人扫的大/小进度 | `docs/human/路网思维导图.md` |
 | Design Note | 为什么变成这样：尝试、放弃、未决 | `docs/ai/design-notes/` |
 | Benchmark | 测出来什么：数字、环境、限制 | `docs/ai/design-notes/` |

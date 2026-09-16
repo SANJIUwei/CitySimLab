@@ -6,11 +6,10 @@ public sealed class WorldPositionTests
     [Fact]
     public void Distance_FromOriginToThreeFourZero_IsFive()
     {
-        var world = new World();
-        var a = new World.WorldPosition { x = 0f, y = 0f, z = 0f };
-        var b = new World.WorldPosition { x = 3f, y = 4f, z = 0f };
+        var a = new WorldPosition { x = 0f, y = 0f, z = 0f };
+        var b = new WorldPosition { x = 3f, y = 4f, z = 0f };
 
-        double actual = world.Distance(a, b);
+        double actual = WorldPosition.Distance(a, b);
 
         // 第三参数是小数精度位数，避免浮点开方的细微误差。
         Assert.Equal(5.0, actual, 5);
@@ -20,11 +19,10 @@ public sealed class WorldPositionTests
     [Fact]
     public void Distance_WhenPointsAreIdentical_IsZero()
     {
-        var world = new World();
-        var a = new World.WorldPosition { x = 1.5f, y = -2f, z = 8f };
-        var b = new World.WorldPosition { x = 1.5f, y = -2f, z = 8f };
+        var a = new WorldPosition { x = 1.5f, y = -2f, z = 8f };
+        var b = new WorldPosition { x = 1.5f, y = -2f, z = 8f };
 
-        double actual = world.Distance(a, b);
+        double actual = WorldPosition.Distance(a, b);
 
         Assert.Equal(0.0, actual, 5);
     }

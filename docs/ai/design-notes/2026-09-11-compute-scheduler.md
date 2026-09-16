@@ -11,7 +11,7 @@
 - 优先级 0–100。High/Normal/Low 只是 80/50/20。
 - 按分数段排队，虚拟运行时间分配；等得久会往前挤，低优先级不饿死。
 - 主线程只 `Apply`。
-- **不绑死一颗物理核。** `dedicatedCore` 仍在代码里，但是过时选项，默认关；Headless 也不再打开。
+- **不绑死一颗物理核。** `dedicatedCore` / `ComputeHost` 已从代码删除。
 - 调度器不管 CPU/GPU。默认后端是 `CpuParallelBackend`。`GpuDeferredBackend` 是可选实验，不挂在调度器上。
 
 ## 寻路

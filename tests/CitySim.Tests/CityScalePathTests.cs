@@ -115,7 +115,7 @@ public sealed class CityScalePathTests
         {
             for (int x = 0; x < n; x++)
             {
-                nodes[x, y] = new RoadNode(new World.WorldPosition { x = x, y = y, z = 0 }, id++);
+                nodes[x, y] = new RoadNode(new WorldPosition { x = x, y = y, z = 0 }, id++);
                 net.AddNode(nodes[x, y]);
             }
         }

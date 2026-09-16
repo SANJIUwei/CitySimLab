@@ -5,10 +5,10 @@
 | 想知道 | 去哪 |
 |---|---|
 | 现在做到哪、下一刀 | `docs/human/路网思维导图.md` |
-| 模块职责和边界 | `docs/human/02-architecture.md` |
-| Now / Next / Later | `docs/human/01-roadmap.md` |
-| 怎么验证 | `docs/human/03-verification-without-unity.md` |
-| 谁策划、谁写代码 | `docs/human/07-roles.md` |
+| 模块职责和边界 | `docs/human/架构.md` |
+| 现在 / 下一步 / 以后 | `docs/human/迭代路线.md` |
+| 怎么验证 | `docs/human/不用Unity的验证方式.md` |
+| 谁策划、谁写代码 | `docs/human/分工.md` |
 | 当前问题 | `docs/ai/design-notes/2026-09-11-current-problems.md` |
 | 设计思考 | `docs/ai/design-notes/` |
 | 会话交接 | `docs/ai/AI_HANDOFF.md` |

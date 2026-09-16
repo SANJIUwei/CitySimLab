@@ -4,7 +4,7 @@ This document is for AI, not tutorial prose. Keep it compact and update it at th
 
 ## Current State
 
-- Last updated: 2026-09-15
+- Last updated: 2026-09-16
 - Last known location: work
 - Root: `E:\Myself\CitySimLab`
 - Home root (next session): `E:\code\code home\city`
@@ -21,7 +21,7 @@ This document is for AI, not tutorial prose. Keep it compact and update it at th
 
 - Beginner city-simulation project. User plans and supervises; AI implements (2026-09-10).
 - Do not ask the user to write code. Do not commit or push unless asked.
-- Batch tests per `docs/ai/06-when-to-test.md`. Roles: `docs/human/07-roles.md`.
+- Batch tests per `docs/ai/06-when-to-test.md`. Roles: `docs/human/分工.md`.
 
 ## Environment
 
@@ -39,15 +39,16 @@ This document is for AI, not tutorial prose. Keep it compact and update it at th
 - End: update this file. Verify if code changed. Commit/push only when asked.
 - Work machine GitHub credential is `SANJIUwei`. Home machine `HDyouyita` had 403 write failure before.
 
-## Latest Work (2026-09-15)
+## Latest Work (2026-09-16)
 
-- Docs live under `docs/human` (user) and `docs/ai` (AI).
-- Added `docs/ai/AGENT_PROTOCOL.md` and `docs/ai/DOCUMENTATION_STYLE.md`.
-- `AttachNearest(network, maxDistance)`: too far stays unattached.
-- Scheduler uses a single `IComputeBackend`; default `CpuParallelBackend`. GPU backend is optional and not wired.
-- Verified: `dotnet test` 36 passed; Headless ran.
+Normalized Core before the next gameplay knife.
 
-Working tree should be clean after this upload.
+- Human docs renamed to Chinese filenames.
+- Core types live in `namespace CitySim.Core`.
+- Folders: `World/` `Roads/` `Routing/` `Compute/` `Movement/`.
+- `WorldPosition.Distance` replaces `new World()`.
+- Removed obsolete `dedicatedCore` / `ComputeHost`.
+- Gameplay unchanged: still waypoint jumps; `_adj` still bidirectional.
 
 ## Next Recommended Action
 

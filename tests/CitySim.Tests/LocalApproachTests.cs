@@ -6,18 +6,18 @@ public sealed class LocalApproachTests
     public void CrossSegment_LeavesExitNodeThenWalksToTThenEntersDoor()
     {
         var net = new RoadNetwork();
-        var n1 = new RoadNode(new World.WorldPosition { x = 0, y = 0, z = 0 }, 1);
-        var n2 = new RoadNode(new World.WorldPosition { x = 10, y = 0, z = 0 }, 2);
-        var n3 = new RoadNode(new World.WorldPosition { x = 20, y = 0, z = 0 }, 3);
+        var n1 = new RoadNode(new WorldPosition { x = 0, y = 0, z = 0 }, 1);
+        var n2 = new RoadNode(new WorldPosition { x = 10, y = 0, z = 0 }, 2);
+        var n3 = new RoadNode(new WorldPosition { x = 20, y = 0, z = 0 }, 3);
         var s12 = net.AddSegment(n1, n2, 10);
         var s23 = net.AddSegment(n2, n3, 10);
 
         var houseA = new Building(
-            new World.WorldPosition { x = 1, y = 2, z = 0 },
-            new World.WorldPosition { x = 1, y = 0, z = 0 });
+            new WorldPosition { x = 1, y = 2, z = 0 },
+            new WorldPosition { x = 1, y = 0, z = 0 });
         var houseB = new Building(
-            new World.WorldPosition { x = 19, y = 2, z = 0 },
-            new World.WorldPosition { x = 19, y = 0.5f, z = 0 });
+            new WorldPosition { x = 19, y = 2, z = 0 },
+            new WorldPosition { x = 19, y = 0.5f, z = 0 });
         houseA.AttachTo(s12, 0.1f);
         houseB.AttachTo(s23, 0.9f);
 
@@ -42,16 +42,16 @@ public sealed class LocalApproachTests
     public void SameSegment_SkipsExitNodeAndOnlyWalksOnRoadThenDoor()
     {
         var net = new RoadNetwork();
-        var n1 = new RoadNode(new World.WorldPosition { x = 0, y = 0, z = 0 }, 1);
-        var n2 = new RoadNode(new World.WorldPosition { x = 10, y = 0, z = 0 }, 2);
+        var n1 = new RoadNode(new WorldPosition { x = 0, y = 0, z = 0 }, 1);
+        var n2 = new RoadNode(new WorldPosition { x = 10, y = 0, z = 0 }, 2);
         var segment = net.AddSegment(n1, n2, 10);
 
         var houseA = new Building(
-            new World.WorldPosition { x = 1, y = 2, z = 0 },
-            new World.WorldPosition { x = 1, y = 0, z = 0 });
+            new WorldPosition { x = 1, y = 2, z = 0 },
+            new WorldPosition { x = 1, y = 0, z = 0 });
         var houseB = new Building(
-            new World.WorldPosition { x = 9, y = 2, z = 0 },
-            new World.WorldPosition { x = 9, y = 1, z = 0 });
+            new WorldPosition { x = 9, y = 2, z = 0 },
+            new WorldPosition { x = 9, y = 1, z = 0 });
         houseA.AttachTo(segment, 0.1f);
         houseB.AttachTo(segment, 0.9f);
 
@@ -74,18 +74,18 @@ public sealed class LocalApproachTests
     public void CrossSegment_DepartureLeavesDoorThenWalksToTThenEntryNode()
     {
         var net = new RoadNetwork();
-        var n1 = new RoadNode(new World.WorldPosition { x = 0, y = 0, z = 0 }, 1);
-        var n2 = new RoadNode(new World.WorldPosition { x = 10, y = 0, z = 0 }, 2);
-        var n3 = new RoadNode(new World.WorldPosition { x = 20, y = 0, z = 0 }, 3);
+        var n1 = new RoadNode(new WorldPosition { x = 0, y = 0, z = 0 }, 1);
+        var n2 = new RoadNode(new WorldPosition { x = 10, y = 0, z = 0 }, 2);
+        var n3 = new RoadNode(new WorldPosition { x = 20, y = 0, z = 0 }, 3);
         var s12 = net.AddSegment(n1, n2, 10);
         var s23 = net.AddSegment(n2, n3, 10);
 
         var houseA = new Building(
-            new World.WorldPosition { x = 1, y = 2, z = 0 },
-            new World.WorldPosition { x = 1, y = 0.5f, z = 0 });
+            new WorldPosition { x = 1, y = 2, z = 0 },
+            new WorldPosition { x = 1, y = 0.5f, z = 0 });
         var houseB = new Building(
-            new World.WorldPosition { x = 19, y = 2, z = 0 },
-            new World.WorldPosition { x = 19, y = 0, z = 0 });
+            new WorldPosition { x = 19, y = 2, z = 0 },
+            new WorldPosition { x = 19, y = 0, z = 0 });
         houseA.AttachTo(s12, 0.1f);
         houseB.AttachTo(s23, 0.9f);
 

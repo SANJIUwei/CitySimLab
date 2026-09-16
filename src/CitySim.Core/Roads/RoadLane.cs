@@ -1,4 +1,6 @@
 // 相对路段两端的行驶方向，不是路口左转/右转，也不是东南西北。
+namespace CitySim.Core;
+
 public enum LaneDirection
 {
     Forward,

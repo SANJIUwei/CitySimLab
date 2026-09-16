@@ -23,8 +23,12 @@
 ## 还不合理、先不动
 
 1. 车道和 `_adj` 两套拓扑
-2. `AttachNearest` 扫全段、无最大距离
+2. `AttachNearest` 仍扫全部路段（最大距离已有；无空间索引，按设计先不做）
 3. 路改了 Attachment 不失效
-4. Core 多数类型没有 namespace
-5. `World` 既当坐标盒子又当距离计算器
-6. `Thing.Advance` 一次跳一个路点
+4. `Thing.Advance` 一次跳一个路点
+
+## 已收掉（2026-09-16）
+
+- Core 全部 `namespace CitySim.Core`，按 World / Roads / Routing / Compute / Movement 分目录
+- 坐标是 `WorldPosition`，距离是 `WorldPosition.Distance`
+- 去掉过时的 `dedicatedCore` / `ComputeHost`

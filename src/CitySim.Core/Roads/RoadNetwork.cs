@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 
+namespace CitySim.Core;
+
 // 全局图只挂 Node 和 Segment。排队在 PathCenter，计算作业交给 Scheduler。
 public class RoadNetwork
 {
@@ -221,57 +223,5 @@ public class RoadNetwork
     public Trip PlanTrip(Building from, Building to)
     {
         return PlanTrip(RouteEnd.FromBuilding(from), RouteEnd.FromBuilding(to));
-    }
-}
-
-public sealed class GlobalPath
-{
-    public static readonly GlobalPath None = new GlobalPath(new List<long>(), double.PositiveInfinity);
-
-    public static GlobalPath LocalOnly(double cost) => new GlobalPath(new List<long>(), cost);
-
-    public List<long> NodeIds { get; }
-    public double TotalCost { get; }
-    public bool Found => !double.IsPositiveInfinity(TotalCost);
-
-    public GlobalPath(List<long> nodeIds, double totalCost)
-    {
-        NodeIds = nodeIds;
-        TotalCost = totalCost;
-    }
-}
-
-// 一次出行：两端是 RouteEnd，不是建筑。路上的车可以从路上某点出发。
-public sealed class Trip
-{
-    public RouteEnd From { get; }
-    public RouteEnd To { get; }
-    public bool SameSegment { get; }
-    public GlobalPath Global { get; }
-    public World.WorldPosition FromOnRoad { get; }
-    public World.WorldPosition ToOnRoad { get; }
-    public LocalDeparture Departure { get; }
-    public LocalApproach Approach { get; }
-
-    public bool Reachable => SameSegment || Global.Found;
-
-    public Trip(
-        RouteEnd from,
-        RouteEnd to,
-        bool sameSegment,
-        GlobalPath global,
-        World.WorldPosition fromOnRoad,
-        World.WorldPosition toOnRoad,
-        LocalDeparture departure,
-        LocalApproach approach)
-    {
-        From = from;
-        To = to;
-        SameSegment = sameSegment;
-        Global = global;
-        FromOnRoad = fromOnRoad;
-        ToOnRoad = toOnRoad;
-        Departure = departure;
-        Approach = approach;
     }
 }

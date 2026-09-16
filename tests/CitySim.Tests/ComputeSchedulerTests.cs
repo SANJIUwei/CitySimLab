@@ -80,8 +80,8 @@ public sealed class ComputeSchedulerTests
     public void Tick_AsksManagedPathCenterToDispatchInbox()
     {
         var net = new RoadNetwork();
-        var a = new RoadNode(new World.WorldPosition { x = 0, y = 0, z = 0 }, 1);
-        var b = new RoadNode(new World.WorldPosition { x = 10, y = 0, z = 0 }, 2);
+        var a = new RoadNode(new WorldPosition { x = 0, y = 0, z = 0 }, 1);
+        var b = new RoadNode(new WorldPosition { x = 10, y = 0, z = 0 }, 2);
         net.AddSegment(a, b, 1);
         var scheduler = new ComputeScheduler();
         var center = new PathCenter(net, scheduler);
@@ -95,19 +95,6 @@ public sealed class ComputeSchedulerTests
         Assert.Equal(new long[] { 1, 2 }, path.NodeIds);
     }
 
-    [Fact]
-    public void DedicatedCore_StillAppliesOnCaller()
-    {
-        using var scheduler = new ComputeScheduler(dedicatedCore: true);
-        var done = new List<int>();
-        scheduler.Submit(new FlagJob("sim", done, 7));
-
-        int n = scheduler.Tick(1);
-
-        Assert.Equal(1, n);
-        Assert.Equal(7, Assert.Single(done));
-        Assert.True(scheduler.DedicatedCore);
-    }
 
     [Fact]
     public void Tick_LowIsNotStarvedByEndlessHigh()

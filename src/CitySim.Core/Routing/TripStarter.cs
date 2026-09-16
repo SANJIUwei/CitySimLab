@@ -1,12 +1,14 @@
 using System;
 
+namespace CitySim.Core;
+
 // 路上的一端：挂接点 + 路外进出点。路外可以是门口；已经在路上时和挂接点重合。
 public sealed class RouteEnd
 {
     public RoadAttachment Attachment { get; }
-    public World.WorldPosition Access { get; }
+    public WorldPosition Access { get; }
 
-    public RouteEnd(RoadAttachment attachment, World.WorldPosition access)
+    public RouteEnd(RoadAttachment attachment, WorldPosition access)
     {
         Attachment = attachment;
         Access = access;

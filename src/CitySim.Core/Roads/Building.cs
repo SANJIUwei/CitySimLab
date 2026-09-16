@@ -1,22 +1,24 @@
 // 建筑本体在世界坐标里；车上最后一段不现场搜路，只读下面缓存的段和 t。
+namespace CitySim.Core;
+
 public class Building
 {
-    public World.WorldPosition Position { get; set; }
+    public WorldPosition Position { get; set; }
 
     // 进出点，和 Position 分开：人进的是门，不是房子中心。
-    public World.WorldPosition Entrance { get; set; }
+    public WorldPosition Entrance { get; set; }
 
     // 未接入前为 null；热路径上先看有没有缓存，没有就根本不该走最后一百米。
     public RoadAttachment? Attachment { get; private set; }
 
-    public Building(World.WorldPosition position, World.WorldPosition entrance)
+    public Building(WorldPosition position, WorldPosition entrance)
     {
         Position = position;
         Entrance = entrance;
     }
 
     // 生成时调用：对入口做最近点投影，结果存进 Attachment，之后寻路只读缓存。
-    public Building(World.WorldPosition position, World.WorldPosition entrance, RoadNetwork network)
+    public Building(WorldPosition position, WorldPosition entrance, RoadNetwork network)
         : this(position, entrance)
     {
         AttachNearest(network);

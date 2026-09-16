@@ -19,21 +19,24 @@ tools\verify.ps1
 |---|---|
 | 文档目录 | `docs/README.md` |
 | 现在做到哪、下一刀是什么 | `docs/human/路网思维导图.md` |
-| 模块职责和边界 | `docs/human/02-architecture.md` |
-| Now / Next / Later | `docs/human/01-roadmap.md` |
-| 怎么验证 | `docs/human/03-verification-without-unity.md` |
-| 谁策划、谁写代码 | `docs/human/07-roles.md` |
+| 模块职责和边界 | `docs/human/架构.md` |
+| 现在 / 下一步 / 以后 | `docs/human/迭代路线.md` |
+| 怎么验证 | `docs/human/不用Unity的验证方式.md` |
+| 谁策划、谁写代码 | `docs/human/分工.md` |
 
 ## 目录
 
 ```text
-src/CitySim.Core        规则
-src/CitySim.Headless    命令行观察
-src/CitySim.UnityMock   少量生命周期模拟
-tests/CitySim.Tests     规则测试
-docs/human              给人看的路线、架构、进度
-docs/ai                 给 AI 的协议、交接、设计笔记
-tools/verify.ps1        编译 + 测试 + Headless
+src/CitySim.Core/World      坐标
+src/CitySim.Core/Roads      路网、建筑挂路
+src/CitySim.Core/Routing    出行排队
+src/CitySim.Core/Compute    调度
+src/CitySim.Core/Movement   走路
+src/CitySim.Headless        命令行观察
+tests/CitySim.Tests         规则测试
+docs/human                  给人看的文档
+docs/ai                     给 AI 的协议和笔记
+tools/verify.ps1            编译 + 测试 + Headless
 ```
 
 ## 边界

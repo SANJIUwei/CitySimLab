@@ -8,7 +8,7 @@ First file after clone or pull. Engineering rules: `docs/ai/AGENT_PROTOCOL.md`. 
 - AI: architecture, implementation, tests, verification, docs, coupling checks, roadmap navigation.
 - Do not ask the user to write or paste code.
 - Record design thoughts in Simplified Chinese.
-- Batch tests per `docs/ai/06-when-to-test.md`. Roles for the user: `docs/human/07-roles.md`.
+- Batch tests per `docs/ai/06-when-to-test.md`. Roles for the user: `docs/human/分工.md`.
 
 ## Discuss vs Execute
 

@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 
+namespace CitySim.Core;
+
 // 最后一段：离开全局最后一个 Node 之后不再搜图。
 // 固定两步：沿目标路段走到缓存的 t，再从挂接点进门。
 public enum LocalStepKind
@@ -12,9 +14,9 @@ public enum LocalStepKind
 public readonly struct LocalStep
 {
     public LocalStepKind Kind { get; }
-    public World.WorldPosition Position { get; }
+    public WorldPosition Position { get; }
 
-    public LocalStep(LocalStepKind kind, World.WorldPosition position)
+    public LocalStep(LocalStepKind kind, WorldPosition position)
     {
         Kind = kind;
         Position = position;
@@ -25,11 +27,11 @@ public sealed class LocalApproach
 {
     public RoadNode? ExitNode { get; }
     public RoadAttachment Attachment { get; }
-    public World.WorldPosition Entrance { get; }
+    public WorldPosition Entrance { get; }
 
-    public World.WorldPosition OnRoad => Attachment.Segment.PointAt(Attachment.T);
+    public WorldPosition OnRoad => Attachment.Segment.PointAt(Attachment.T);
 
-    public LocalApproach(RoadNode? exitNode, RoadAttachment attachment, World.WorldPosition entrance)
+    public LocalApproach(RoadNode? exitNode, RoadAttachment attachment, WorldPosition entrance)
     {
         ExitNode = exitNode;
         Attachment = attachment;
@@ -52,8 +54,7 @@ public sealed class LocalApproach
     {
         get
         {
-            var world = new World();
-            return world.Distance(OnRoad, Entrance);
+            return WorldPosition.Distance(OnRoad, Entrance);
         }
     }
 
@@ -71,13 +72,13 @@ public sealed class LocalApproach
 // 最先一段：出门后不再搜图。固定两步：挂接点 t，再到入口 Node。同一段没有入口 Node。
 public sealed class LocalDeparture
 {
-    public World.WorldPosition Entrance { get; }
+    public WorldPosition Entrance { get; }
     public RoadAttachment Attachment { get; }
     public RoadNode? EntryNode { get; }
 
-    public World.WorldPosition OnRoad => Attachment.Segment.PointAt(Attachment.T);
+    public WorldPosition OnRoad => Attachment.Segment.PointAt(Attachment.T);
 
-    public LocalDeparture(World.WorldPosition entrance, RoadAttachment attachment, RoadNode? entryNode)
+    public LocalDeparture(WorldPosition entrance, RoadAttachment attachment, RoadNode? entryNode)
     {
         Entrance = entrance;
         Attachment = attachment;
@@ -99,8 +100,7 @@ public sealed class LocalDeparture
     {
         get
         {
-            var world = new World();
-            return world.Distance(Entrance, OnRoad);
+            return WorldPosition.Distance(Entrance, OnRoad);
         }
     }
 

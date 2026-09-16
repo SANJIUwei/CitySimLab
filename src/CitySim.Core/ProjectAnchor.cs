@@ -1,7 +1,6 @@
-namespace CitySim.Core
+namespace CitySim.Core;
+
+public static class ProjectAnchor
 {
-    public static class ProjectAnchor
-    {
-        public const string Name = "CitySimLab";
-    }
+    public const string Name = "CitySimLab";
 }

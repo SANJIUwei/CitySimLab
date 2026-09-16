@@ -5,7 +5,7 @@ public sealed class RoadNodeTests
     [Fact]
     public void Constructor_StoresPositionAndId()
     {
-        var position = new World.WorldPosition { x = 3f, y = 4f, z = 0f };
+        var position = new WorldPosition { x = 3f, y = 4f, z = 0f };
 
         var node = new RoadNode(position, 7);
 

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 
+namespace CitySim.Core;
+
 public static class ComputeCategories
 {
     public const string Path = "path";

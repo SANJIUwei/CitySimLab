@@ -16,6 +16,8 @@ Analysis only: 看看 / 分析一下 / 你觉得呢 / 研究一下 / 给建议 /
 
 Change the repo only when asked: 实现 / 修改 / 重构 / 修复 / 加上 / 删除 / 提交 / 推送.
 
+Do not commit or push unless the user asks.
+
 ## Session Start
 
 1. `git status --short --branch`.
@@ -32,7 +34,7 @@ Update `docs/ai/AI_HANDOFF.md` with location, completed work, files changed, com
 
 If code changed, run `tools\verify.ps1`. Then `git status --short`.
 
-For requested implementation work, use the standing backup authorization in the Git section. Do not create empty commits or include unrelated changes.
+Do not commit or push unless asked.
 
 ## Architecture
 
@@ -47,6 +49,3 @@ For requested implementation work, use the standing backup authorization in the 
 - Remote: `https://github.com/SANJIUwei/CitySimLab.git`.
 - Prefer `main`. Never reset, checkout, or delete changes you did not make unless asked.
 - Keep build outputs, secrets, and Unity Library out of Git.
-- The user authorizes a scoped commit and push to `origin/main` after each completed implementation work chunk, without asking again. Analysis-only tasks and empty changes produce no commit.
-- Stage only files changed for the task. Stop and report if unrelated changes exist, the remote has diverged, or authentication fails. Never push secrets or generated outputs.
-- This is a per-work-chunk backup cadence; no background timer or scheduled runner is configured.

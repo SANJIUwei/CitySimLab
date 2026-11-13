@@ -4,7 +4,7 @@ This document is for AI, not tutorial prose. Keep it compact and update it at th
 
 ## Current State
 
-- Last updated: 2026-11-13
+- Last updated: 2026-09-16
 - Last known location: work
 - Root: `E:\Myself\CitySimLab`
 - Home root (next session): `E:\code\code home\city`
@@ -20,7 +20,7 @@ This document is for AI, not tutorial prose. Keep it compact and update it at th
 ## Project Intent
 
 - Beginner city-simulation project. User plans and supervises; AI implements (2026-09-10).
-- Do not ask the user to write code. The user authorizes scoped backup commits and pushes after each completed implementation work chunk; see Git Sync Rules.
+- Do not ask the user to write code. Do not commit or push unless asked.
 - Batch tests per `docs/ai/06-when-to-test.md`. Roles: `docs/human/分工.md`.
 
 ## Environment
@@ -36,16 +36,10 @@ This document is for AI, not tutorial prose. Keep it compact and update it at th
 
 - Git: plain Git, VS Code, or GitHub Desktop.
 - Start: `git status --short --branch`. Pull only if the tree is clean.
-- End: update this file. Verify code changes. Commit and push task-scoped changes to `origin/main` under the standing backup authorization; do not commit empty or unrelated changes.
-- No background timer is configured. Backups happen at completed work chunks. The remote repository is public; never push secrets or generated outputs.
-- 2026-11-13 check: worktree clean at start; `main` matched `origin/main`; `git push --dry-run origin main` returned `Everything up-to-date`.
+- End: update this file. Verify if code changed. Commit/push only when asked.
 - Work machine GitHub credential is `SANJIUwei`. Home machine `HDyouyita` had 403 write failure before.
 
-## Latest Work (2026-11-13)
-
-Configured per-work-chunk GitHub backups for Codex work. No project source changes were pending; the repository was already synced to its GitHub remote.
-
-## Previous Work (2026-09-16)
+## Latest Work (2026-09-16)
 
 Normalized Core before the next gameplay knife.
 

@@ -44,3 +44,7 @@ tools/verify.ps1            编译 + 测试 + Headless
 - Core 不引用 Unity。
 - 先用测试和 Headless 证明规则，再谈画面。
 - GPU 寻路是可选实验，代码未进本仓库。见 `docs/ai/design-notes/2026-09-12-gpu-pathfinding-benchmark.md`。
+
+## Godot 可视化预览（可选）
+
+`src/CitySim.Godot` 用 Godot 4.7.2 .NET 版逐步回放 Core 的 ALT 寻路过程，并展示同一请求下 ALT 与 Dijkstra 的搜索节点数。它不替代 Headless，也不要求 Core 依赖 Godot。见 [启动与验证](src/CitySim.Godot/README.md)。

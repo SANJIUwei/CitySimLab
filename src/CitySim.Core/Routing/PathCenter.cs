@@ -14,6 +14,8 @@ public class PathCenter : IComputeCenter
 {
     readonly RoadNetwork _network;
     readonly ComputeScheduler _scheduler;
+    readonly bool _captureSearch;
+    readonly PathAlgorithm _algorithm;
     readonly Queue<IComputeJob> _inbox = new Queue<IComputeJob>();
 
     public string Category => ComputeCategories.Path;
@@ -21,23 +23,26 @@ public class PathCenter : IComputeCenter
     public int PendingCount => Inbox + _scheduler.PendingIn(Category);
     public ComputeScheduler Scheduler => _scheduler;
 
-    public PathCenter(RoadNetwork network, ComputeScheduler? scheduler = null)
+    public PathCenter(RoadNetwork network, ComputeScheduler? scheduler = null, bool captureSearch = false,
+        PathAlgorithm algorithm = PathAlgorithm.Alt)
     {
         _network = network;
         _scheduler = scheduler ?? new ComputeScheduler();
+        _captureSearch = captureSearch;
+        _algorithm = algorithm;
         _scheduler.Manage(this);
     }
 
     public void Enqueue(Thing thing, TripCommand command, ComputePriority priority = ComputePriority.High)
     {
         lock (_inbox)
-            _inbox.Enqueue(new PathSearchJob(_network, thing, command, priority));
+            _inbox.Enqueue(new PathSearchJob(_network, thing, command, priority, _algorithm, _captureSearch));
     }
 
     public void Enqueue(long startNodeId, long endNodeId, Action<GlobalPath> onDone, ComputePriority priority = ComputePriority.Normal)
     {
         lock (_inbox)
-            _inbox.Enqueue(new NodeSearchJob(_network, startNodeId, endNodeId, onDone, priority));
+            _inbox.Enqueue(new NodeSearchJob(_network, startNodeId, endNodeId, onDone, priority, _algorithm, _captureSearch));
     }
 
     public int Dispatch(int maxJobs)
@@ -89,19 +94,24 @@ sealed class PathSearchJob : ComputeJob
     readonly RoadNetwork _network;
     readonly Thing _thing;
     readonly TripCommand _command;
+    readonly PathAlgorithm _algorithm;
+    readonly bool _captureSearch;
     Trip? _trip;
 
-    public PathSearchJob(RoadNetwork network, Thing thing, TripCommand command, ComputePriority priority)
+    public PathSearchJob(RoadNetwork network, Thing thing, TripCommand command, ComputePriority priority,
+        PathAlgorithm algorithm, bool captureSearch)
         : base(ComputeCategories.Path, priority)
     {
         _network = network;
         _thing = thing;
         _command = command;
+        _algorithm = algorithm;
+        _captureSearch = captureSearch;
     }
 
     public override void Execute()
     {
-        _trip = _network.PlanTrip(_command.Origin, _command.Destination);
+        _trip = _network.PlanTrip(_command.Origin, _command.Destination, _algorithm, _captureSearch);
     }
 
     public override void Apply()
@@ -119,20 +129,25 @@ sealed class NodeSearchJob : ComputeJob
     readonly long _start;
     readonly long _end;
     readonly Action<GlobalPath> _onDone;
+    readonly PathAlgorithm _algorithm;
+    readonly bool _captureSearch;
     GlobalPath _result = GlobalPath.None;
 
-    public NodeSearchJob(RoadNetwork network, long start, long end, Action<GlobalPath> onDone, ComputePriority priority)
+    public NodeSearchJob(RoadNetwork network, long start, long end, Action<GlobalPath> onDone, ComputePriority priority,
+        PathAlgorithm algorithm, bool captureSearch)
         : base(ComputeCategories.Path, priority)
     {
         _network = network;
         _start = start;
         _end = end;
         _onDone = onDone;
+        _algorithm = algorithm;
+        _captureSearch = captureSearch;
     }
 
     public override void Execute()
     {
-        _result = _network.FindPath(_start, _end);
+        _result = _network.FindPath(_start, _end, _algorithm, _captureSearch);
     }
 
     public override void Apply() => _onDone(_result);

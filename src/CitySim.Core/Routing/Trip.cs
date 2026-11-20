@@ -1,6 +1,37 @@
+using System;
 using System.Collections.Generic;
 
 namespace CitySim.Core;
+
+public enum PathAlgorithm { Alt, Dijkstra }
+
+public readonly struct PathRelaxation
+{
+    public long NodeId { get; }
+    public double Cost { get; }
+
+    internal PathRelaxation(long nodeId, double cost)
+    {
+        NodeId = nodeId;
+        Cost = cost;
+    }
+}
+
+public sealed class PathSearchStep
+{
+    public long NodeId { get; }
+    public double Cost { get; }
+    public double Priority { get; }
+    public IReadOnlyList<PathRelaxation> Improvements { get; }
+
+    internal PathSearchStep(long nodeId, double cost, double priority, IReadOnlyList<PathRelaxation> improvements)
+    {
+        NodeId = nodeId;
+        Cost = cost;
+        Priority = priority;
+        Improvements = improvements;
+    }
+}
 
 public sealed class GlobalPath
 {
@@ -12,10 +43,16 @@ public sealed class GlobalPath
     public double TotalCost { get; }
     public bool Found => !double.IsPositiveInfinity(TotalCost);
 
-    public GlobalPath(List<long> nodeIds, double totalCost)
+    public PathAlgorithm? Algorithm { get; }
+    public IReadOnlyList<PathSearchStep> SearchSteps { get; }
+
+    public GlobalPath(List<long> nodeIds, double totalCost, PathAlgorithm? algorithm = null,
+        IReadOnlyList<PathSearchStep>? searchSteps = null)
     {
         NodeIds = nodeIds;
         TotalCost = totalCost;
+        Algorithm = algorithm;
+        SearchSteps = searchSteps ?? Array.Empty<PathSearchStep>();
     }
 }
 

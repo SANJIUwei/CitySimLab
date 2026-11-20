@@ -20,6 +20,11 @@ public class Thing
     public WorldPosition Position { get; private set; }
     public int StepIndex { get; private set; }
     public bool Arrived { get; private set; }
+    RoadNetwork? _travelNetwork;
+    long _travelTopologyVersion;
+    public bool NeedsReplan => _travelNetwork != null &&
+        (_travelNetwork.TopologyVersion != _travelTopologyVersion ||
+         Route?.PlannedNetwork is { } originNetwork && originNetwork != _travelNetwork);
     readonly List<LocalStep> _itinerary = new List<LocalStep>();
     public int StepCount => _itinerary.Count;
 
@@ -50,7 +55,7 @@ public class Thing
     // 收到路线后的局部判定：同一段不进全局图；跨段先走出发局部，再走全局，再走最后一段。
     public LocalPathKind JudgeLocalPath()
     {
-        if (Route == null || !Route.Reachable)
+        if (Route == null || !Route.Reachable || NeedsReplan)
             return LocalPathKind.Unreachable;
         if (Route.SameSegment)
             return LocalPathKind.SameSegment;
@@ -75,11 +80,15 @@ public class Thing
     public void PrepareTravel(RoadNetwork network)
     {
         _itinerary.Clear();
+        _travelNetwork = network;
+        _travelTopologyVersion = Route?.PlannedNetwork == network
+            ? Route.PlannedTopology : network.TopologyVersion;
         StepIndex = 0;
         Arrived = false;
-        if (Route == null || !Route.Reachable)
+        if (Route == null || !Route.Reachable || NeedsReplan ||
+            Route.PlannedNetwork != null && Route.PlannedNetwork != network)
         {
-            Arrived = true;
+            Arrived = Route == null || !Route.Reachable;
             return;
         }
 
@@ -107,7 +116,7 @@ public class Thing
     // 走到下一个逻辑点。已经到终点再调返回 false。
     public bool Advance()
     {
-        if (Arrived || _itinerary.Count == 0)
+        if (Arrived || NeedsReplan || _itinerary.Count == 0)
             return false;
         if (StepIndex + 1 >= _itinerary.Count)
         {
@@ -140,6 +149,7 @@ public class Thing
 
     void ClearTravel()
     {
+        _travelNetwork = null;
         _itinerary.Clear();
         StepIndex = 0;
         Arrived = false;

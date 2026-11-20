@@ -43,15 +43,23 @@ public sealed class GlobalPath
     public double TotalCost { get; }
     public bool Found => !double.IsPositiveInfinity(TotalCost);
 
+    public RouteFailure Failure { get; }
+    public IReadOnlyList<RoadLane> Lanes { get; }
+    public static GlobalPath Failed(RouteFailure reason, PathAlgorithm? algorithm = null) =>
+        new(new List<long>(), double.PositiveInfinity, algorithm, failure: reason);
+
     public PathAlgorithm? Algorithm { get; }
     public IReadOnlyList<PathSearchStep> SearchSteps { get; }
 
     public GlobalPath(List<long> nodeIds, double totalCost, PathAlgorithm? algorithm = null,
-        IReadOnlyList<PathSearchStep>? searchSteps = null)
+        IReadOnlyList<PathSearchStep>? searchSteps = null, IReadOnlyList<RoadLane>? lanes = null,
+        RouteFailure failure = RouteFailure.None)
     {
         NodeIds = nodeIds;
         TotalCost = totalCost;
         Algorithm = algorithm;
+        Lanes = lanes ?? Array.Empty<RoadLane>();
+        Failure = Found ? RouteFailure.None : failure == RouteFailure.None ? RouteFailure.NoLegalRoute : failure;
         SearchSteps = searchSteps ?? Array.Empty<PathSearchStep>();
     }
 }
@@ -68,7 +76,15 @@ public sealed class Trip
     public LocalDeparture Departure { get; }
     public LocalApproach Approach { get; }
 
-    public bool Reachable => SameSegment || Global.Found;
+    public bool Reachable => Global.Found;
+    public RouteFailure Failure => Global.Failure;
+    // 路段完整/部分代价和转向等待，单位随地图的路段权重；不混入楼门到路边的米数。
+    public double TotalCost { get; }
+    public RoadLane? DepartureLane { get; }
+    public RoadLane? ArrivalLane { get; }
+    internal RoadNetwork? PlannedNetwork { get; set; }
+    internal long PlannedTopology { get; set; }
+    internal TravelOptions? PlannedTravel { get; set; }
 
     public Trip(
         RouteEnd from,
@@ -78,7 +94,7 @@ public sealed class Trip
         WorldPosition fromOnRoad,
         WorldPosition toOnRoad,
         LocalDeparture departure,
-        LocalApproach approach)
+        LocalApproach approach, double? totalCost = null, RoadLane? departureLane = null, RoadLane? arrivalLane = null)
     {
         From = from;
         To = to;
@@ -88,5 +104,8 @@ public sealed class Trip
         ToOnRoad = toOnRoad;
         Departure = departure;
         Approach = approach;
+        TotalCost = totalCost ?? global.TotalCost;
+        DepartureLane = departureLane;
+        ArrivalLane = arrivalLane;
     }
 }

@@ -23,7 +23,6 @@ public partial class CityView : Node2D
         FontNames = new[] { "Noto Sans CJK SC", "Microsoft YaHei", "PingFang SC", "WenQuanYi Zen Hei" }
     };
 
-    private const float Pace = 120f;
     private const float SearchInterval = .55f;
     private readonly CityDemo _demo = new();
     private readonly List<Vector2> _route = new();
@@ -35,13 +34,14 @@ public partial class CityView : Node2D
     private readonly HashSet<long> _confirmed = new();
     private int _searchIndex;
     private float _phaseDelay;
-    private bool Searching => _searchIndex < _demo.SearchSteps.Count;
-    private bool Arrived => !Searching && _phaseDelay <= 0 && _distance >= _total;
+    private bool Searching => _route.Count > 0 && _searchIndex < _demo.SearchSteps.Count;
+    private bool Arrived => !Searching && _phaseDelay <= 0 && _timed?.State == TimedTravelState.Arrived;
     private int _from;
     private int _to = 1;
     private bool _playing = true;
     private float _distance;
     private float _total;
+    private TimedRoadTraveler? _timed;
     private string? _capturePath;
     private int _frames;
 
@@ -53,6 +53,7 @@ public partial class CityView : Node2D
         _step = AddButton("单步寻路［→］", 994, 601, StepOnce);
         AddButton("重新演示［R］", 994, 645, RestartCurrent);
         AddButton("交换起终点", 994, 689, Reverse);
+        InstallConstructionControls();
         RestartCurrent();
         foreach (var arg in OS.GetCmdlineUserArgs())
         {
@@ -78,8 +79,14 @@ public partial class CityView : Node2D
                 _phaseDelay = MathF.Max(0, _phaseDelay - (float)delta);
                 if (Searching && _phaseDelay == 0) AdvanceSearch();
             }
-            else _distance = MathF.Min(_total, _distance + (float)delta * Pace);
-            if (Arrived) _playing = false;
+            else if (_timed != null)
+            {
+                var before = Map(_timed.Position);
+                _timed.Tick(delta);
+                _distance = MathF.Min(_total, _distance + before.DistanceTo(Map(_timed.Position)));
+                if (_timed.State == TimedTravelState.Arrived) _distance = _total;
+            }
+            if (Arrived || _timed?.State == TimedTravelState.NeedsReplan) _playing = false;
             SyncButtons();
             QueueRedraw();
         }
@@ -94,7 +101,10 @@ public partial class CityView : Node2D
     public override void _UnhandledKeyInput(InputEvent @event)
     {
         if (@event is not InputEventKey { Pressed: true, Echo: false } key) return;
-        if (key.Keycode == Key.Space) Toggle();
+        if (key.Keycode == Key.B) ToggleConstruction();
+        else if (_constructionMode && key.Keycode == Key.T) CycleTemplate();
+        else if (_constructionMode && key.Keycode == Key.Escape) ToggleConstruction();
+        else if (key.Keycode == Key.Space) Toggle();
         else if (key.Keycode == Key.R) RestartCurrent();
         else if (key.Keycode == Key.Right && Searching) StepOnce();
         else return;
@@ -151,12 +161,41 @@ public partial class CityView : Node2D
             DrawLine(a, b, C("384f51"), 18, true);
         }
         foreach (var road in _demo.Network.Segments)
-            Dashed(Map(road.StartNode.Position), Map(road.EndNode.Position), C("778983"), 1.2f, 6, 10);
+        {
+            var a = Map(road.StartNode.Position);
+            var b = Map(road.EndNode.Position);
+            bool forward = false, reverse = false;
+            foreach (var lane in road.Lanes)
+            {
+                forward |= lane.Direction == LaneDirection.Forward;
+                reverse |= lane.Direction == LaneDirection.Reverse;
+            }
+            if (forward == reverse)
+            {
+                Dashed(a, b, C("778983"), 1.2f, 6, 10);
+                continue;
+            }
+            var direction = (forward ? b - a : a - b).Normalized();
+            var side = new Vector2(-direction.Y, direction.X);
+            for (int i = 1; i <= 3; i++)
+            {
+                var tip = a.Lerp(b, i / 4f) + direction * 5;
+                DrawLine(tip - direction * 9 + side * 4, tip, Teal, 1.7f, true);
+                DrawLine(tip - direction * 9 - side * 4, tip, Teal, 1.7f, true);
+            }
+        }
         foreach (var n in _demo.Network.Nodes)
         {
             Vector2 p = Map(n.Position);
             DrawCircle(p, 10, C("3b5153"));
             DrawCircle(p, 4, C("75918a"));
+        }
+
+        if (_demo.SignalJunction is { } signal)
+        {
+            var location = Map(signal.Position) + new Vector2(11, -11);
+            DrawCircle(location, 5, _timed?.State == TimedTravelState.WaitingForGreen ? Coral : Gold);
+            Text(location.X + 8, location.Y + 3, "信号", 10, Ink);
         }
 
         for (int i = 0; i < _demo.Buildings.Count; i++)
@@ -194,7 +233,7 @@ public partial class CityView : Node2D
             Marker(_route[^1], "B", Coral);
             if (!Searching && _phaseDelay <= 0)
             {
-                var p = PositionAt(_distance);
+                var p = _timed == null ? PositionAt(_distance) : Map(_timed.Position);
                 DrawCircle(p, 13, C("24251d"));
                 DrawCircle(p, 8, Ink);
                 DrawCircle(p, 4, Gold);
@@ -212,12 +251,14 @@ public partial class CityView : Node2D
             Text(60, 715, "●  道路接入点", 14, Muted);
             Text(210, 715, "━  寻路结果", 14, Gold);
             Text(350, 715, "●  移动对象", 14, Ink);
+            Text(485, 715, "›  单向道路", 14, Teal);
         }
         var scale = new Vector2(810, 709);
         DrawLine(scale, scale + new Vector2(90, 0), Muted, 1);
         DrawLine(scale, scale + new Vector2(0, -5), Muted, 1);
         DrawLine(scale + new Vector2(90, 0), scale + new Vector2(90, -5), Muted, 1);
         Text(810, 726, "100 地图单位", 10, Muted);
+        DrawConstruction();
     }
 
     private void DrawSearchOverlay()
@@ -250,7 +291,9 @@ public partial class CityView : Node2D
         Rule(252);
         Text(995, 279, !_playing && !Arrived ? "出行状态 · 已暂停" : "出行状态", 12, Muted);
         Text(995, 309, _route.Count == 0 ? "无可用路线" : Searching ? "① 逐步寻路" :
-            _phaseDelay > 0 ? "② 路线已确定" : Arrived ? "已到达" : "③ 沿路线行进", 23, Gold);
+            _phaseDelay > 0 ? "② 路线已确定" : Arrived ? "已到达" :
+            _timed?.State == TimedTravelState.WaitingForGreen ? "红灯等待" :
+            _timed?.State == TimedTravelState.NeedsReplan ? "需重新规划" : "③ 沿路线行进", 23, Gold);
         float progress = Searching ? (_searchIndex + 1f) / _demo.SearchSteps.Count :
             _phaseDelay > 0 ? 1f : _total > 0 ? _distance / _total : 0f;
         DrawRect(new Rect2(996, 328, 224, 5), Border);
@@ -266,11 +309,26 @@ public partial class CityView : Node2D
         }
         else if (_demo.Baseline is { } baseline)
         {
-            Metric(382, _demo.Traveler.Route?.Global.Algorithm == PathAlgorithm.Alt ? "ALT 确认路口" : "本次确认路口", _demo.SearchSteps.Count.ToString());
-            Metric(414, "Dijkstra 确认路口", baseline.SearchSteps.Count.ToString());
-            Metric(446, "路网段代价", $"{_demo.Traveler.Route?.Global.TotalCost:0.##}");
+            Metric(382, _demo.Traveler.Route?.Global.Algorithm == PathAlgorithm.Alt ? "ALT 搜索步数" : "本次搜索步数", _demo.SearchSteps.Count.ToString());
+            Metric(414, "Dijkstra 搜索步数", baseline.SearchSteps.Count.ToString());
+            Metric(446, "整趟道路代价", $"{_demo.Traveler.Route?.TotalCost:0.##}");
         }
         Rule(491);
+        if (_route.Count == 0)
+        {
+            string reason = _demo.LastFailure switch
+            {
+                RouteFailure.NoBuildingAccess => "建筑没有可用的车行出入口",
+                RouteFailure.DepartureNotAllowed => "没有可用的驶出方向",
+                RouteFailure.ArrivalNotAllowed => "没有可用的驶入方向",
+                RouteFailure.DirectionNotAllowed => "通行方向不允许",
+                RouteFailure.VehicleOrTimeRestricted => "受车型或时段限制",
+                RouteFailure.TurnNotAllowed => "必要的转向不允许",
+                _ => "没有找到符合道路规则的路线"
+            };
+            Text(995, 516, reason, 13, Muted);
+            return;
+        }
         var trip = _demo.Traveler.Route;
         bool usedAlt = trip?.Global.Algorithm == PathAlgorithm.Alt;
         Text(995, 516, trip?.SameSegment == true ? "同段路线 · 无需全局寻路" :
@@ -341,11 +399,14 @@ public partial class CityView : Node2D
 
     private void RestartCurrent()
     {
-        _demo.Restart(_from, _to);
+        bool hasRoute = _demo.Restart(_from, _to);
         _route.Clear();
         _distances.Clear();
+        _timed = hasRoute && _demo.Traveler.Route is { } trip
+            ? new TimedRoadTraveler(_demo.Network, trip, 0, metersPerUnit: .14, roadSpeedKph: 50, accessSpeedKph: 12)
+            : null;
         _distance = _total = 0;
-        foreach (var point in _demo.Route)
+        foreach (var point in hasRoute ? _demo.Route : Array.Empty<WorldPosition>())
         {
             var v = Map(point);
             if (_route.Count != 0)
@@ -357,8 +418,8 @@ public partial class CityView : Node2D
         _confirmed.Clear();
         _searchIndex = 0;
         _phaseDelay = Searching ? SearchInterval : 1.4f;
-        if (Searching) ApplySearchStep();
-        _playing = true;
+        if (hasRoute && Searching) ApplySearchStep();
+        _playing = hasRoute;
         SyncButtons();
         QueueRedraw();
     }
@@ -433,17 +494,27 @@ public partial class CityView : Node2D
         Vector2 end = _route.Count == 0 ? default : _route[^1];
         int forwardCount = _route.Count;
         bool motion = forward && PositionAt(_total / 2) != start && PositionAt(_total) == end;
+        var timeline = _timed;
+        bool signalWaitObserved = false;
+        if (timeline != null)
+            for (int i = 0; i < 400 && timeline.State != TimedTravelState.Arrived; i++)
+            {
+                timeline.Tick(.1);
+                signalWaitObserved |= timeline.State == TimedTravelState.WaitingForGreen;
+            }
+        bool timed = timeline?.State == TimedTravelState.Arrived && Map(timeline.Position) == end;
         int altSteps = _demo.SearchSteps.Count;
         int dijkstraSteps = _demo.Baseline?.SearchSteps.Count ?? 0;
-        bool equalCost = _demo.Baseline is { } baseline && _demo.Traveler.Route is { } trip &&
+        bool equalCost = _demo.BaselineTripCost is { } baselineCost && _demo.Traveler.Route is { } trip &&
             trip.Global.Algorithm == PathAlgorithm.Alt &&
-            Math.Abs(baseline.TotalCost - trip.Global.TotalCost) < 1e-8;
+            Math.Abs(baselineCost - trip.TotalCost) < 1e-8;
         StepOnce();
         bool step = !_playing && _searchIndex == 1 && _distance == 0;
         Reverse();
         bool reverse = _route.Count >= 4 && _route[0] == end && _route[^1] == start && Searching && _searchIndex == 0;
-        bool valid = forward && motion && reverse && equalCost && step && altSteps > 1 && dijkstraSteps > 1;
-        GD.Print($"CitySimLab Godot smoke: forward={forward}; waypoints={forwardCount}; interpolation={motion}; reverse={reverse}; ALT={altSteps}; Dijkstra={dijkstraSteps}; equalCost={equalCost}; step={step}");
+        bool construction = RunConstructionSmoke();
+        bool valid = forward && motion && reverse && equalCost && step && altSteps > 1 && dijkstraSteps > 1 && construction && timed && signalWaitObserved;
+        GD.Print($"CitySimLab Godot smoke: forward={forward}; waypoints={forwardCount}; interpolation={motion}; reverse={reverse}; ALT={altSteps}; Dijkstra={dijkstraSteps}; equalCost={equalCost}; step={step}; construction={construction}; timed={timed}; signalWait={signalWaitObserved}");
         GetTree().Quit(valid ? 0 : 1);
     }
 }

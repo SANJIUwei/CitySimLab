@@ -25,16 +25,16 @@ public sealed class LocalApproachTests
         var steps = trip.Approach.Steps();
 
         Assert.False(trip.SameSegment);
-        Assert.Same(n3, trip.Approach.ExitNode);
+        Assert.Same(n2, trip.Approach.ExitNode);
         Assert.Equal(3, steps.Count);
         Assert.Equal(LocalStepKind.Node, steps[0].Kind);
-        Assert.Equal(20f, steps[0].Position.x, 3);
+        Assert.Equal(10f, steps[0].Position.x, 3);
         Assert.Equal(LocalStepKind.OnRoad, steps[1].Kind);
         Assert.Equal(19f, steps[1].Position.x, 3);
         Assert.Equal(LocalStepKind.Entrance, steps[2].Kind);
         Assert.Equal(19f, steps[2].Position.x, 3);
         Assert.Equal(0.5f, steps[2].Position.y, 3);
-        Assert.Equal(1.0, trip.Approach.AlongSegmentCost, 5);
+        Assert.Equal(9.0, trip.Approach.AlongSegmentCost, 5);
         Assert.Equal(0.5, trip.Approach.OffRoadDistance, 5);
     }
 
@@ -92,14 +92,14 @@ public sealed class LocalApproachTests
         var trip = net.PlanTrip(houseA, houseB);
         var steps = trip.Departure.Steps();
 
-        Assert.Same(n1, trip.Departure.EntryNode);
+        Assert.Same(n2, trip.Departure.EntryNode);
         Assert.Equal(3, steps.Count);
         Assert.Equal(LocalStepKind.Entrance, steps[0].Kind);
         Assert.Equal(LocalStepKind.OnRoad, steps[1].Kind);
         Assert.Equal(1f, steps[1].Position.x, 3);
         Assert.Equal(LocalStepKind.Node, steps[2].Kind);
-        Assert.Equal(0f, steps[2].Position.x, 3);
-        Assert.Equal(1.0, trip.Departure.AlongSegmentCost, 5);
+        Assert.Equal(10f, steps[2].Position.x, 3);
+        Assert.Equal(9.0, trip.Departure.AlongSegmentCost, 5);
         Assert.Equal(0.5, trip.Departure.OffRoadDistance, 5);
     }
 }

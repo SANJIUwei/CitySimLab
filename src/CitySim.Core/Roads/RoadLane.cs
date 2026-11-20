@@ -1,24 +1,39 @@
-// 相对路段两端的行驶方向，不是路口左转/右转，也不是东南西北。
+using System;
+
 namespace CitySim.Core;
 
-public enum LaneDirection
-{
-    Forward,
-    Reverse
-}
+public enum LaneDirection { Forward, Reverse }
 
-// 同一段路上的一条单向通道。不做成 Node，否则车道数会把寻路图撑大。
 public class RoadLane
 {
     public RoadSegment Segment { get; }
-
     public LaneDirection Direction { get; }
+    public VehicleKind AllowedVehicles { get; }
+    public TravelWindow? ActiveWindow { get; }
+    public double? PostedSpeedKph { get; }
+    public double? EffectivePostedSpeedKph => PostedSpeedKph ?? Segment.Profile.PostedSpeedKph;
+    public long FromId => (Direction == LaneDirection.Forward ? Segment.StartNode : Segment.EndNode).ID;
+    public long ToId => (Direction == LaneDirection.Forward ? Segment.EndNode : Segment.StartNode).ID;
+    internal TravelDirection DirectionFlag => Direction == LaneDirection.Forward
+        ? TravelDirection.Forward : TravelDirection.Reverse;
 
-    public RoadLane(RoadSegment segment, LaneDirection direction)
+    public RoadLane(RoadSegment segment, LaneDirection direction, VehicleKind allowedVehicles = VehicleKind.All,
+        TravelWindow? activeWindow = null, double? postedSpeedKph = null)
     {
+        if (direction is not (LaneDirection.Forward or LaneDirection.Reverse))
+            throw new ArgumentOutOfRangeException(nameof(direction));
+        if (allowedVehicles == VehicleKind.None || (allowedVehicles & ~VehicleKind.All) != 0)
+            throw new ArgumentOutOfRangeException(nameof(allowedVehicles));
+        if (postedSpeedKph is double speed && (!double.IsFinite(speed) || speed <= 0))
+            throw new ArgumentOutOfRangeException(nameof(postedSpeedKph));
         Segment = segment;
         Direction = direction;
+        AllowedVehicles = allowedVehicles;
+        ActiveWindow = activeWindow;
+        PostedSpeedKph = postedSpeedKph;
     }
 
-    // TODO(以后): 转向和标志发生在路口（Node），看本车道接到下一段的哪条车道，不在这里写转向角。
+    public bool CanTravel(TravelOptions travel) => (AllowedVehicles & travel.Vehicle) != 0 &&
+        (Segment.Profile.AllowedTravelModes & travel.Vehicle) != 0 &&
+        (ActiveWindow == null || ActiveWindow.Value.Includes(travel.MinuteOfDay));
 }

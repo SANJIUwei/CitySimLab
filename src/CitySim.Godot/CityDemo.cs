@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CitySim.Core;
 
 namespace CitySim.Godot;
@@ -16,6 +17,9 @@ public sealed class CityDemo
     public IReadOnlyList<WorldPosition> Route { get; private set; } = Array.Empty<WorldPosition>();
     public IReadOnlyList<PathSearchStep> SearchSteps => Traveler.Route?.Global.SearchSteps ?? Array.Empty<PathSearchStep>();
     public GlobalPath? Baseline { get; private set; }
+    public double? BaselineTripCost { get; private set; }
+    public RouteFailure LastFailure { get; private set; }
+    public RoadNode? SignalJunction { get; private set; }
     public Thing Traveler { get; private set; } = new();
     public int OriginIndex { get; private set; }
     public int DestinationIndex { get; private set; } = 1;
@@ -42,7 +46,7 @@ public sealed class CityDemo
                 if ((row == 1 && col == 3) || (row == 2 && col == 0))
                     continue;
 
-                AddRoad(nodes[col, row], nodes[col + 1, row], row == 1 ? 0.78 : 1.0);
+                AddRoad(nodes[col, row], nodes[col + 1, row], row == 1 ? 0.78 : 1.0, oneWay: row == 0 && col == 0);
             }
         }
 
@@ -76,6 +80,7 @@ public sealed class CityDemo
             new DemoBlock("社区花园", At(411, 461), 97, 77),
         });
 
+        InstallDemoSignal();
         _pathCenter = new PathCenter(Network, captureSearch: true);
         if (!Restart())
             throw new InvalidOperationException("The demo's default trip must have a route.");
@@ -89,15 +94,28 @@ public sealed class CityDemo
             originIndex == destinationIndex)
             return false;
 
+        OriginIndex = originIndex;
+        DestinationIndex = destinationIndex;
+        LastFailure = RouteFailure.None;
+        Route = Array.Empty<WorldPosition>();
+        Baseline = null;
+        BaselineTripCost = null;
         var origin = Buildings[originIndex].Building;
         var destination = Buildings[destinationIndex].Building;
         var traveler = new Thing();
+        Traveler = traveler;
         if (!TripStarter.Request(traveler, _pathCenter, origin, destination))
+        {
+            LastFailure = RouteFailure.NoBuildingAccess;
             return false;
+        }
 
         _pathCenter.Process(1);
         if (traveler.Route is not { Reachable: true } trip)
+        {
+            LastFailure = traveler.Route?.Failure ?? RouteFailure.NoLegalRoute;
             return false;
+        }
 
         var points = new List<WorldPosition> { traveler.Position };
         while (traveler.Advance())
@@ -105,22 +123,40 @@ public sealed class CityDemo
 
         // Reuse the computed trip, not a second search. Leave the live Thing at its origin.
         traveler.PrepareTravel(Network);
-        Traveler = traveler;
         Route = points.AsReadOnly();
-        // Optional, demo-only comparison on the exact same graph endpoints.
-        var ids = trip.Global.NodeIds;
-        Baseline = ids.Count > 0 ? Network.FindPath(ids[0], ids[^1], PathAlgorithm.Dijkstra, captureSearch: true) : null;
-        OriginIndex = originIndex;
-        DestinationIndex = destinationIndex;
+        // Compare on the same complete request, including access and turns.
+        var baseline = Network.PlanTrip(origin, destination, PathAlgorithm.Dijkstra, captureSearch: true);
+        Baseline = baseline.Global;
+        BaselineTripCost = baseline.TotalCost;
         return true;
     }
 
-    private void AddRoad(RoadNode start, RoadNode end, double weight)
+    private void InstallDemoSignal()
+    {
+        var prototype = Network.PlanTrip(Buildings[0].Building, Buildings[1].Building, PathAlgorithm.Dijkstra);
+        if (prototype.Global.NodeIds.Count < 2 ||
+            !Network.TryGetNode(prototype.Global.NodeIds[1], out var junction))
+            return;
+
+        var lanes = Network.Segments.SelectMany(segment => segment.Lanes).ToArray();
+        var phases = lanes.Where(lane => lane.ToId == junction.ID)
+            .Select(incoming => lanes.Where(outgoing => outgoing.FromId == junction.ID && outgoing.ToId != incoming.FromId)
+                .Select(outgoing => new SignalMovement(incoming, outgoing)).ToArray())
+            .Where(movements => movements.Length > 0)
+            // Timings belong to this demonstration, not a local engineering standard.
+            .Select(movements => new SignalPhase(3, 1, .5, movements)).ToArray();
+        if (phases.Length == 0) return;
+
+        Network.SetSignalPlan(junction, new SignalPlan(phases, offsetSeconds: 1));
+        SignalJunction = junction;
+    }
+
+    private void AddRoad(RoadNode start, RoadNode end, double weight, bool oneWay = false)
     {
         var cost = WorldPosition.Distance(start.Position, end.Position) * weight;
         var segment = Network.AddSegment(start, end, cost);
         segment.AddLane(LaneDirection.Forward);
-        segment.AddLane(LaneDirection.Reverse);
+        if (!oneWay) segment.AddLane(LaneDirection.Reverse);
     }
 
     private DemoBuilding MakeBuilding(string name, int x, int y, int width, int height, int doorX, int doorY)

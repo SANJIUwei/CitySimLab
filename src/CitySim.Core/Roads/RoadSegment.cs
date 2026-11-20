@@ -11,7 +11,15 @@ public class RoadSegment
 
     public RoadNode EndNode { get; }
 
-    public List<RoadLane> Lanes { get; } = new List<RoadLane>();
+    readonly List<RoadLane> _lanes = new();
+    readonly RoadLane[] _legacyLanes;
+    bool _lanesConfigured;
+    public IReadOnlyList<RoadLane> Lanes { get; }
+    internal IEnumerable<RoadLane> RoutingLanes => _lanesConfigured ? _lanes : _legacyLanes;
+    internal event Action? LanesChanged;
+    public RoadProfile Profile { get; }
+    internal bool CanPhysicallyConnect(RoadSegment other) => Profile.Level == other.Profile.Level ||
+        Profile.Role == RoadRole.Ramp || other.Profile.Role == RoadRole.Ramp;
 
     // 沿路几何长度。局部 t→t、进出段用这个，不要跟寻路权重混用。
     public double Length { get; set; }
@@ -19,11 +27,19 @@ public class RoadSegment
     // 全局寻路用的边权。限速、禁行、拥堵以后加进这个数，不改变 Length。
     public double Cost { get; set; }
 
-    public RoadSegment(RoadNode startNode, RoadNode endNode, double cost = 1.0)
+    public RoadSegment(RoadNode startNode, RoadNode endNode, double cost = 1.0, RoadProfile? profile = null)
     {
+        Profile = profile ?? new();
+        if (!double.IsFinite(Profile.MinimumAccessSetback) || Profile.MinimumAccessSetback < 0 ||
+            Profile.DesignSpeedKph is double design && (!double.IsFinite(design) || design <= 0) ||
+            Profile.PostedSpeedKph is double posted && (!double.IsFinite(posted) || posted <= 0))
+            throw new ArgumentOutOfRangeException(nameof(profile));
         StartNode = startNode;
         EndNode = endNode;
         Cost = cost;
+        _legacyLanes = Profile.Role == RoadRole.Ramp ? Array.Empty<RoadLane>() :
+            new[] { new RoadLane(this, LaneDirection.Forward), new RoadLane(this, LaneDirection.Reverse) };
+        Lanes = _lanes.AsReadOnly();
         Length = WorldPosition.Distance(startNode.Position, endNode.Position);
         if (Length == 0)
             Length = cost;
@@ -70,11 +86,22 @@ public class RoadSegment
     }
 
     // 从段上创建车道，保证 Lanes 和 lane.Segment 同时写上；不要在外面 new RoadLane 再漏加进列表。
-    public RoadLane AddLane(LaneDirection direction)
+    public RoadLane AddLane(LaneDirection direction, VehicleKind allowedVehicles = VehicleKind.All,
+        TravelWindow? activeWindow = null, double? postedSpeedKph = null)
     {
-        var lane = new RoadLane(this, direction);
-        Lanes.Add(lane);
+        var lane = new RoadLane(this, direction, allowedVehicles, activeWindow, postedSpeedKph);
+        _lanesConfigured = true;
+        _lanes.Add(lane);
+        LanesChanged?.Invoke();
         return lane;
+    }
+
+    public bool RemoveLane(RoadLane lane)
+    {
+        if (!_lanes.Remove(lane))
+            return false;
+        LanesChanged?.Invoke();
+        return true;
     }
 
     // TODO(以后): 长度/弯直。现在用两端坐标就能量直线距离，弯路几何还没定。

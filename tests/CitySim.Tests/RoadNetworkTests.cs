@@ -53,8 +53,8 @@ public sealed class RoadNetworkTests
         Assert.Equal(3, net.FindEntryNode(houseB).ID);
 
         var path = net.FindPath(houseA, houseB);
-        Assert.Equal(new long[] { 1, 2, 3 }, path.NodeIds);
-        Assert.Equal(20.0, path.TotalCost);
+        Assert.Equal(new long[] { 2 }, path.NodeIds);
+        Assert.Equal(0, path.TotalCost, 5);
 
         var onRoad = s12.PointAt(0.1f);
         Assert.Equal(1f, onRoad.x, 3);
@@ -109,10 +109,10 @@ public sealed class RoadNetworkTests
         var trip = net.PlanTrip(houseA, houseB);
 
         Assert.False(trip.SameSegment);
-        Assert.Equal(new long[] { 1, 2, 3 }, trip.Global.NodeIds);
-        Assert.Equal(20.0, trip.Global.TotalCost);
-        Assert.Same(n1, trip.Departure.EntryNode);
-        Assert.Same(n3, trip.Approach.ExitNode);
+        Assert.Equal(new long[] { 2 }, trip.Global.NodeIds);
+        Assert.Equal(18.0, trip.TotalCost, 5);
+        Assert.Same(n2, trip.Departure.EntryNode);
+        Assert.Same(n2, trip.Approach.ExitNode);
     }
 
     [Fact]
@@ -130,7 +130,7 @@ public sealed class RoadNetworkTests
         var trip = net.PlanTrip(from, to);
 
         Assert.False(trip.SameSegment);
-        Assert.Equal(new long[] { 1, 2, 3 }, trip.Global.NodeIds);
+        Assert.Equal(new long[] { 2 }, trip.Global.NodeIds);
         Assert.Same(from, trip.From);
         Assert.Same(to, trip.To);
         Assert.Equal(from.Access.x, trip.Departure.Entrance.x);

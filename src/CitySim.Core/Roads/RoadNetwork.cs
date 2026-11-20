@@ -12,6 +12,13 @@ public partial class RoadNetwork
     readonly Dictionary<long, RoadNode> _nodesById = new Dictionary<long, RoadNode>();
     readonly Dictionary<long, List<(long to, double cost)>> _adj = new Dictionary<long, List<(long to, double cost)>>();
 
+    readonly Dictionary<long, List<RoadSegment>> _roadsAt = new();
+    readonly Dictionary<RoadSegment, double> _baseCosts = new();
+    readonly Dictionary<(RoadLane Incoming, RoadLane Outgoing), (bool Allowed, double Wait)> _turns = new();
+    readonly HashSet<long> _explicitTurns = new();
+    bool _usesRoadRules;
+    public long TopologyVersion { get; private set; }
+
     [ThreadStatic] static PathScratch? t_scratch;
 
     public void AddNode(RoadNode node)
@@ -21,6 +28,7 @@ public partial class RoadNetwork
         if (_nodesById.ContainsKey(node.ID))
             throw new InvalidOperationException("Node ID already exists");
         Nodes.Add(node);
+        _roadsAt.Add(node.ID, new());
         _nodesById[node.ID] = node;
         if (!_adj.ContainsKey(node.ID))
             _adj[node.ID] = new List<(long, double)>();
@@ -28,15 +36,25 @@ public partial class RoadNetwork
 
     public bool TryGetNode(long id, out RoadNode node) => _nodesById.TryGetValue(id, out node);
 
-    public RoadSegment AddSegment(RoadNode start, RoadNode end, double cost = 1.0)
+    public RoadSegment AddSegment(RoadNode start, RoadNode end, double cost = 1.0, RoadProfile? profile = null)
     {
         if (double.IsNaN(cost) || double.IsInfinity(cost) || cost < 0)
             throw new ArgumentOutOfRangeException(nameof(cost), "Routing cost must be finite and non-negative");
         if (!_nodesById.ContainsKey(start.ID)) AddNode(start);
         if (!_nodesById.ContainsKey(end.ID)) AddNode(end);
-        var segment = new RoadSegment(start, end, cost);
+        if (!ReferenceEquals(_nodesById[start.ID], start) || !ReferenceEquals(_nodesById[end.ID], end))
+            throw new ArgumentException("Use the registered road node instance");
+        var segment = new RoadSegment(start, end, cost, profile);
+        _baseCosts.Add(segment, cost);
+        _roadsAt[start.ID].Add(segment);
+        if (start.ID != end.ID)
+            _roadsAt[end.ID].Add(segment);
+        segment.LanesChanged += EnableRoadRules;
+        if (profile != null)
+            EnableRoadRules();
         Segments.Add(segment);
-        // 全局图先当双向；单行以后用车道方向裁边，不在这里写死单向。
+        TopologyVersion++;
+        // 双向放松图只为 ALT 提供下界，不能作为已配置道路的合法性依据。
         _adj[start.ID].Add((end.ID, cost));
         _adj[end.ID].Add((start.ID, cost));
         lock (_landmarkGate)
@@ -57,10 +75,14 @@ public partial class RoadNetwork
     }
 
     public GlobalPath FindPath(long startId, long endId, PathAlgorithm algorithm = PathAlgorithm.Alt,
-        bool captureSearch = false)
+        bool captureSearch = false, TravelOptions? travel = null)
     {
+        var options = travel ?? TravelOptions.Default;
+        options.Validate();
         if (!_nodesById.ContainsKey(startId) || !_nodesById.ContainsKey(endId))
-            return GlobalPath.None;
+            return GlobalPath.Failed(RouteFailure.MissingNode);
+        if (_usesRoadRules && startId != endId)
+            return FindConfiguredPath(startId, endId, algorithm, captureSearch, options);
         if (startId == endId)
             return new GlobalPath(new List<long> { startId }, 0, searchSteps: captureSearch
                 ? Array.AsReadOnly(new[] { new PathSearchStep(startId, 0, 0, Array.Empty<PathRelaxation>()) })
@@ -215,39 +237,36 @@ public partial class RoadNetwork
     }
 
     public GlobalPath FindPath(RouteEnd from, RouteEnd to)
-    {
-        return FindPath(FindEntryNode(from.Attachment).ID, FindEntryNode(to.Attachment).ID);
-    }
+        => PlanTrip(from, to).Global;
 
     public GlobalPath FindPath(Building from, Building to)
+        => TryPlanTrip(from, to, out var trip, out var failure) ? trip!.Global :
+            trip?.Global ?? GlobalPath.Failed(failure);
+
+    // 接入点参加合法路径搜索，不能为了距离近自行选择一个路口或逆走同一段。
+    public Trip PlanTrip(RouteEnd from, RouteEnd to, PathAlgorithm algorithm = PathAlgorithm.Alt,
+        bool captureSearch = false, TravelOptions? travel = null)
     {
-        return FindPath(RouteEnd.FromBuilding(from), RouteEnd.FromBuilding(to));
+        var options = travel ?? TravelOptions.Default;
+        options.Validate();
+        return PlanConfiguredTrip(from, to, algorithm, captureSearch, options);
     }
 
-    // 同一段：只走局部 t→t。跨段：Access→t→入口 Node，全局最短路，出口 Node→t→Access。
-    public Trip PlanTrip(RouteEnd from, RouteEnd to, PathAlgorithm algorithm = PathAlgorithm.Alt, bool captureSearch = false)
-    {
-        var fromOnRoad = from.Attachment.Segment.PointAt(from.Attachment.T);
-        var toOnRoad = to.Attachment.Segment.PointAt(to.Attachment.T);
+    public Trip PlanTrip(Building from, Building to, PathAlgorithm algorithm = PathAlgorithm.Alt,
+        bool captureSearch = false, TravelOptions? travel = null)
+        => PlanTrip(RouteEnd.FromBuilding(from), RouteEnd.FromBuilding(to), algorithm, captureSearch, travel);
 
-        if (ReferenceEquals(from.Attachment.Segment, to.Attachment.Segment))
+    public bool TryPlanTrip(Building from, Building to, out Trip? trip, out RouteFailure failure,
+        PathAlgorithm algorithm = PathAlgorithm.Alt, bool captureSearch = false, TravelOptions? travel = null)
+    {
+        trip = null;
+        if (!from.HasActiveAttachment(this) || !to.HasActiveAttachment(this))
         {
-            double localCost = from.Attachment.Segment.LengthBetween(from.Attachment.T, to.Attachment.T);
-            var departure = new LocalDeparture(from.Access, from.Attachment, null);
-            var approach = new LocalApproach(null, to.Attachment, to.Access);
-            return new Trip(from, to, sameSegment: true, GlobalPath.LocalOnly(localCost), fromOnRoad, toOnRoad, departure, approach);
+            failure = RouteFailure.NoBuildingAccess;
+            return false;
         }
-
-        var entryNode = FindEntryNode(from.Attachment);
-        var exitNode = FindEntryNode(to.Attachment);
-        var global = FindPath(entryNode.ID, exitNode.ID, algorithm, captureSearch);
-        var startLocal = new LocalDeparture(from.Access, from.Attachment, global.Found ? entryNode : null);
-        var endLocal = new LocalApproach(global.Found ? exitNode : null, to.Attachment, to.Access);
-        return new Trip(from, to, sameSegment: false, global, fromOnRoad, toOnRoad, startLocal, endLocal);
-    }
-
-    public Trip PlanTrip(Building from, Building to, PathAlgorithm algorithm = PathAlgorithm.Alt, bool captureSearch = false)
-    {
-        return PlanTrip(RouteEnd.FromBuilding(from), RouteEnd.FromBuilding(to), algorithm, captureSearch);
+        trip = PlanTrip(from, to, algorithm, captureSearch, travel);
+        failure = trip.Failure;
+        return trip.Reachable;
     }
 }

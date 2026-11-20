@@ -22,6 +22,7 @@ public class PathCenter : IComputeCenter
     public int Inbox { get { lock (_inbox) return _inbox.Count; } }
     public int PendingCount => Inbox + _scheduler.PendingIn(Category);
     public ComputeScheduler Scheduler => _scheduler;
+    internal bool HasActiveAccess(Building building) => building.HasActiveAttachment(_network);
 
     public PathCenter(RoadNetwork network, ComputeScheduler? scheduler = null, bool captureSearch = false,
         PathAlgorithm algorithm = PathAlgorithm.Alt)
@@ -111,7 +112,7 @@ sealed class PathSearchJob : ComputeJob
 
     public override void Execute()
     {
-        _trip = _network.PlanTrip(_command.Origin, _command.Destination, _algorithm, _captureSearch);
+        _trip = _network.PlanTrip(_command.Origin, _command.Destination, _algorithm, _captureSearch, _command.Travel);
     }
 
     public override void Apply()

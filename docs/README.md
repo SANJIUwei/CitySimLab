@@ -10,6 +10,8 @@
 | 怎么验证 | `docs/human/不用Unity的验证方式.md` |
 | 谁策划、谁写代码 | `docs/human/分工.md` |
 | 当前问题 | `docs/ai/design-notes/2026-09-11-current-problems.md` |
+| 道路法规、等级与游戏取舍 | [道路研究资料库](ai/road-research/README.md) |
+| 道路系统评审稿 | [道路系统策划案](human/道路系统策划案.md) |
 | 设计思考 | `docs/ai/design-notes/` |
 | 会话交接 | `docs/ai/AI_HANDOFF.md` |
 | 工程协议 | `docs/ai/AGENT_PROTOCOL.md` |

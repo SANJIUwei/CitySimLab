@@ -6,7 +6,7 @@ public class RoadNode
     public WorldPosition Position { get; set; }
 
     // 由创建者保证唯一；节点不加一，否则还要挂一个全局计数器，现在没有路网容器。
-    public long ID { get; set; }
+    public long ID { get; }
 
     public RoadNode(WorldPosition position, long id)
     {

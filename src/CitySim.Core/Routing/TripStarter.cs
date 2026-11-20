@@ -7,18 +7,27 @@ public sealed class RouteEnd
 {
     public RoadAttachment Attachment { get; }
     public WorldPosition Access { get; }
+    public TravelDirection EnterFrom { get; }
+    public TravelDirection ExitToward { get; }
+    public bool IsBuildingAccess { get; }
 
-    public RouteEnd(RoadAttachment attachment, WorldPosition access)
+    public RouteEnd(RoadAttachment attachment, WorldPosition access,
+        TravelDirection enterFrom = TravelDirection.Both, TravelDirection exitToward = TravelDirection.Both,
+        bool isBuildingAccess = false)
     {
         Attachment = attachment;
         Access = access;
+        EnterFrom = enterFrom;
+        ExitToward = exitToward;
+        IsBuildingAccess = isBuildingAccess;
     }
 
     public static RouteEnd FromBuilding(Building building)
     {
         if (building.Attachment == null)
             throw new InvalidOperationException("Building is not attached to a segment");
-        return new RouteEnd(building.Attachment, building.Entrance);
+        return new RouteEnd(building.Attachment, building.VehicleAccessPoint ?? building.Entrance,
+            building.Attachment.EnterFrom, building.Attachment.ExitToward, isBuildingAccess: true);
     }
 
     public static RouteEnd OnRoad(RoadAttachment attachment)
@@ -40,9 +49,9 @@ public static class TripStarter
         PathCenter pathCenter,
         RouteEnd from,
         RouteEnd to,
-        ComputePriority priority = ComputePriority.High)
+        ComputePriority priority = ComputePriority.High, TravelOptions? travel = null)
     {
-        thing.AcceptCommand(new TripCommand(from, to));
+        thing.AcceptCommand(new TripCommand(from, to, travel));
         thing.RequestRoute(pathCenter, priority);
         return true;
     }
@@ -52,11 +61,11 @@ public static class TripStarter
         PathCenter pathCenter,
         Building from,
         Building to,
-        ComputePriority priority = ComputePriority.High)
+        ComputePriority priority = ComputePriority.High, TravelOptions? travel = null)
     {
-        if (from.Attachment == null || to.Attachment == null)
+        if (!pathCenter.HasActiveAccess(from) || !pathCenter.HasActiveAccess(to))
             return false;
-        return Request(thing, pathCenter, RouteEnd.FromBuilding(from), RouteEnd.FromBuilding(to), priority);
+        return Request(thing, pathCenter, RouteEnd.FromBuilding(from), RouteEnd.FromBuilding(to), priority, travel);
     }
 }
 
@@ -64,10 +73,12 @@ public sealed class TripCommand
 {
     public RouteEnd Origin { get; }
     public RouteEnd Destination { get; }
+    public TravelOptions? Travel { get; }
 
-    public TripCommand(RouteEnd origin, RouteEnd destination)
+    public TripCommand(RouteEnd origin, RouteEnd destination, TravelOptions? travel = null)
     {
         Origin = origin;
         Destination = destination;
+        Travel = travel;
     }
 }

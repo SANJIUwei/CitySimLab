@@ -25,7 +25,7 @@ public sealed class ThingTravelTests
     }
 
     [Fact]
-    public void Advance_CrossSegment_VisitsGlobalNodesThenDoor()
+    public void Advance_CrossSegment_UsesSharedJunctionWithoutBacktracking()
     {
         var net = new RoadNetwork();
         var n1 = new RoadNode(new WorldPosition { x = 0, y = 0, z = 0 }, 1);
@@ -44,9 +44,7 @@ public sealed class ThingTravelTests
             seenX.Add(thing.Position.x);
 
         Assert.True(thing.Arrived);
-        Assert.Contains(0f, seenX);
-        Assert.Contains(10f, seenX);
-        Assert.Contains(20f, seenX);
+        Assert.Equal(new[] { 1f, 10f, 19f }, seenX);
         Assert.Equal(b.Entrance.x, thing.Position.x);
     }
 

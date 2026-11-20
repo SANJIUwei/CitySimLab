@@ -29,3 +29,12 @@ pathCenter.Process(1);
 var trip = thing.Route!;
 Console.WriteLine($"Waiting={thing.WaitingForRoute} Kind={thing.JudgeLocalPath()} SameSegment={trip.SameSegment} LocalCost={trip.Global.TotalCost} Nodes={trip.Global.NodeIds.Count}");
 Console.WriteLine($"Departure steps={trip.Departure.Steps().Count} Approach steps={trip.Approach.Steps().Count}");
+
+var directed = new RoadNetwork();
+var oneWay = directed.AddSegment(new RoadNode(a, 1), new RoadNode(b, 2), cost: 5,
+    profile: new RoadProfile(UrbanClass: UrbanRoadClass.Local));
+oneWay.AddLane(LaneDirection.Forward);
+var forward = directed.FindPath(1, 2);
+var reverse = directed.FindPath(2, 1);
+Console.WriteLine($"Road rules smoke: one-way forward={forward.Found}; reverse={reverse.Found}; reason={reverse.Failure}");
+if (!forward.Found || reverse.Found) Environment.ExitCode = 1;

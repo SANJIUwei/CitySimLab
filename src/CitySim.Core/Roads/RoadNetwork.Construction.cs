@@ -12,7 +12,8 @@ public sealed record RoadConstructionPlan(RoadNode Start, RoadNode End, RoadProf
 public enum RoadConstructionIssueKind
 {
     InvalidEndpoint, ConflictingNodeId, ZeroLength, InvalidCost, InvalidProfile, MissingLanes, InvalidLane,
-    JunctionRequiresSharedNode, ControlledAccessRequiresGradeSeparation, OverlappingRoads, RampRequiresJunction
+    JunctionRequiresSharedNode, ControlledAccessRequiresGradeSeparation, OverlappingRoads, RampRequiresJunction,
+    ExcessiveGrade, InsufficientGeometricClearance
 }
 
 public enum RoadConstructionCrossingKind
@@ -79,6 +80,8 @@ public partial class RoadNetwork
 
         if (!hasLength || !hasProfile)
             return new RoadConstructionPreview(issues, crossings);
+        if (p!.Engineering?.CheckStraightGrade(a.Position, b.Position) == false)
+            issues.Add(new(RoadConstructionIssueKind.ExcessiveGrade));
 
         bool rampHasJunction = false;
         foreach (var existing in Segments)
@@ -102,7 +105,11 @@ public partial class RoadNetwork
             RoadConstructionCrossingKind kind;
             RoadConstructionIssueKind? issue = null;
             if (gradeSeparated && (shared == null || !hasRamp || overlap))
+            {
                 kind = RoadConstructionCrossingKind.GradeSeparated;
+                if (!HasMinimumGeometricClearance(p, existing, point))
+                    issue = RoadConstructionIssueKind.InsufficientGeometricClearance;
+            }
             else if (overlap)
             {
                 kind = RoadConstructionCrossingKind.Overlap;
@@ -172,9 +179,31 @@ public partial class RoadNetwork
         Enum.IsDefined(typeof(RoadStructure), profile.Structure) &&
         Enum.IsDefined(typeof(BuildingAccessPolicy), profile.BuildingAccess) &&
         double.IsFinite(profile.MinimumAccessSetback) && profile.MinimumAccessSetback >= 0 &&
-        ValidConstructionSpeed(profile.DesignSpeedKph) && ValidConstructionSpeed(profile.PostedSpeedKph);
+        ValidConstructionSpeed(profile.DesignSpeedKph) && ValidConstructionSpeed(profile.PostedSpeedKph) &&
+        ValidConstructionSpeed(profile.EngineeringMetersPerUnit);
 
     static bool ValidConstructionSpeed(double? speed) => speed == null || double.IsFinite(speed.Value) && speed.Value > 0;
+
+    // Centreline separation is a necessary bound, not engineering-certified net clearance.
+    // Do not invent a clearance rule when the lower road has no reference.
+    static bool HasMinimumGeometricClearance(RoadProfile proposed, RoadSegment existing, WorldPosition crossing)
+    {
+        var prior = existing.Profile;
+        var lower = proposed.Level < prior.Level ? proposed : prior;
+        if (lower.Engineering?.MinMotorClearanceMeters is not double metres) return true;
+        var scale = lower.EngineeringMetersPerUnit;
+        if (scale is not double metersPerUnit) return true;
+
+        var start = existing.StartNode.Position;
+        var end = existing.EndNode.Position;
+        double dx = (double)end.x - start.x, dy = (double)end.y - start.y;
+        double run2 = dx * dx + dy * dy;
+        if (run2 == 0) return false;
+        double t = Math.Clamp(((crossing.x - start.x) * dx + (crossing.y - start.y) * dy) / run2, 0, 1);
+        double existingZ = start.z + t * ((double)end.z - start.z);
+        double verticalGap = proposed.Level < prior.Level ? existingZ - crossing.z : crossing.z - existingZ;
+        return verticalGap * metersPerUnit >= metres;
+    }
 
     bool MoreThanOneMainlineAt(RoadNode node, int level)
     {

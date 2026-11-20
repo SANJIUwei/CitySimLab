@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CitySim.Core;
 using global::Godot;
 
@@ -35,13 +36,17 @@ public partial class CityView : Node2D
     private int _searchIndex;
     private float _phaseDelay;
     private bool Searching => _route.Count > 0 && _searchIndex < _demo.SearchSteps.Count;
-    private bool Arrived => !Searching && _phaseDelay <= 0 && _timed?.State == TimedTravelState.Arrived;
+    private bool Arrived => !Searching && _phaseDelay <= 0 &&
+        (_traffic != null ? _traffic.Vehicles.All(vehicle => vehicle.Arrived) : _timed?.State == TimedTravelState.Arrived);
     private int _from;
     private int _to = 1;
     private bool _playing = true;
     private float _distance;
     private float _total;
     private TimedRoadTraveler? _timed;
+    private TrafficSimulation? _traffic;
+    private TrafficVehicle? _leadTruck;
+    private bool IsFreight => _from == CityDemo.FactoryIndex || _to == CityDemo.FactoryIndex;
     private string? _capturePath;
     private int _frames;
 
@@ -54,6 +59,7 @@ public partial class CityView : Node2D
         AddButton("重新演示［R］", 994, 645, RestartCurrent);
         AddButton("交换起终点", 994, 689, Reverse);
         InstallConstructionControls();
+        InstallAccessControls();
         RestartCurrent();
         foreach (var arg in OS.GetCmdlineUserArgs())
         {
@@ -79,6 +85,13 @@ public partial class CityView : Node2D
                 _phaseDelay = MathF.Max(0, _phaseDelay - (float)delta);
                 if (Searching && _phaseDelay == 0) AdvanceSearch();
             }
+            else if (_traffic != null && _leadTruck != null)
+            {
+                var before = Map(_leadTruck.Position);
+                _traffic.Tick(delta);
+                _distance = MathF.Min(_total, _distance + before.DistanceTo(Map(_leadTruck.Position)));
+                if (Arrived) _distance = _total;
+            }
             else if (_timed != null)
             {
                 var before = Map(_timed.Position);
@@ -86,7 +99,8 @@ public partial class CityView : Node2D
                 _distance = MathF.Min(_total, _distance + before.DistanceTo(Map(_timed.Position)));
                 if (_timed.State == TimedTravelState.Arrived) _distance = _total;
             }
-            if (Arrived || _timed?.State == TimedTravelState.NeedsReplan) _playing = false;
+            if (Arrived || _timed?.State == TimedTravelState.NeedsReplan ||
+                _traffic?.Vehicles.Any(vehicle => vehicle.NeedsReplan) == true) _playing = false;
             SyncButtons();
             QueueRedraw();
         }
@@ -102,7 +116,17 @@ public partial class CityView : Node2D
     {
         if (@event is not InputEventKey { Pressed: true, Echo: false } key) return;
         if (key.Keycode == Key.B) ToggleConstruction();
+        else if (key.Keycode == Key.A) ToggleAccess();
+        else if (key.Keycode == Key.F) ToggleFreight();
+        else if (_accessMode && key.Keycode == Key.Up) CycleAccess(-1);
+        else if (_accessMode && key.Keycode == Key.Down) CycleAccess(1);
+        else if (_accessMode && key.Keycode == Key.Enter) ApplyAccessSelection();
+        else if (_accessMode && key.Keycode == Key.Delete) CloseAccessSelection();
+        else if (_accessMode && key.Keycode == Key.Escape) ToggleAccess();
         else if (_constructionMode && key.Keycode == Key.T) CycleTemplate();
+        else if (_constructionMode && key.Keycode == Key.L) CycleStructure();
+        else if (_constructionMode && key.Keycode == Key.V) CyclePostedLimit();
+        else if (_constructionMode && key.Keycode == Key.N) CycleHighwayClass();
         else if (_constructionMode && key.Keycode == Key.Escape) ToggleConstruction();
         else if (key.Keycode == Key.Space) Toggle();
         else if (key.Keycode == Key.R) RestartCurrent();
@@ -117,7 +141,7 @@ public partial class CityView : Node2D
         Text(42, 39, "CITYSIMLAB   /   城市模拟工作台", 15, Teal);
         Text(40, 85, "城市寻路演示", 42, Ink);
         Text(980, 53, "GODOT 预览  /  03", 17, Ink);
-        Text(980, 78, "俯视地图  ·  地标寻路", 13, Muted);
+        Text(980, 78, "设计组 · 现代中国大陆", 10, Muted);
         DrawLine(new Vector2(40, 102), new Vector2(1240, 102), Border, 1);
         DrawMap();
         DrawSidebar();
@@ -158,7 +182,9 @@ public partial class CityView : Node2D
             var a = Map(road.StartNode.Position);
             var b = Map(road.EndNode.Position);
             DrawLine(a, b, C("0b181b"), 24, true);
-            DrawLine(a, b, C("384f51"), 18, true);
+            DrawLine(a, b, road.Profile.Level > 0 ? C("557a87") :
+                road.Profile.UrbanClass == UrbanRoadClass.Arterial ? C("4b6464") : C("384f51"), 18, true);
+            if (road.Profile.HasMedian) DrawLine(a, b, Back, 2, true);
         }
         foreach (var road in _demo.Network.Segments)
         {
@@ -233,10 +259,23 @@ public partial class CityView : Node2D
             Marker(_route[^1], "B", Coral);
             if (!Searching && _phaseDelay <= 0)
             {
-                var p = _timed == null ? PositionAt(_distance) : Map(_timed.Position);
-                DrawCircle(p, 13, C("24251d"));
-                DrawCircle(p, 8, Ink);
-                DrawCircle(p, 4, Gold);
+                if (_traffic != null)
+                {
+                    foreach (var vehicle in _traffic.Vehicles)
+                    {
+                        var p = Map(vehicle.Position);
+                        DrawCircle(p, 9, Back);
+                        DrawCircle(p, 6, vehicle.HoldReason == TrafficWaitReason.None ? Ink : Coral);
+                        Text(p.X + 10, p.Y + 3, $"货车 {vehicle.Id}", 10, Ink);
+                    }
+                }
+                else
+                {
+                    var p = _timed == null ? PositionAt(_distance) : Map(_timed.Position);
+                    DrawCircle(p, 13, C("24251d"));
+                    DrawCircle(p, 8, Ink);
+                    DrawCircle(p, 4, Gold);
+                }
             }
         }
         if (Searching)
@@ -259,6 +298,7 @@ public partial class CityView : Node2D
         DrawLine(scale + new Vector2(90, 0), scale + new Vector2(90, -5), Muted, 1);
         Text(810, 726, "100 地图单位", 10, Muted);
         DrawConstruction();
+        DrawAccess();
     }
 
     private void DrawSearchOverlay()
@@ -293,7 +333,8 @@ public partial class CityView : Node2D
         Text(995, 309, _route.Count == 0 ? "无可用路线" : Searching ? "① 逐步寻路" :
             _phaseDelay > 0 ? "② 路线已确定" : Arrived ? "已到达" :
             _timed?.State == TimedTravelState.WaitingForGreen ? "红灯等待" :
-            _timed?.State == TimedTravelState.NeedsReplan ? "需重新规划" : "③ 沿路线行进", 23, Gold);
+            _timed?.State == TimedTravelState.NeedsReplan ? "需重新规划" :
+            IsFreight ? "货车正在运输" : "③ 沿路线行进", 23, Gold);
         float progress = Searching ? (_searchIndex + 1f) / _demo.SearchSteps.Count :
             _phaseDelay > 0 ? 1f : _total > 0 ? _distance / _total : 0f;
         DrawRect(new Rect2(996, 328, 224, 5), Border);
@@ -312,6 +353,8 @@ public partial class CityView : Node2D
             Metric(382, _demo.Traveler.Route?.Global.Algorithm == PathAlgorithm.Alt ? "ALT 搜索步数" : "本次搜索步数", _demo.SearchSteps.Count.ToString());
             Metric(414, "Dijkstra 搜索步数", baseline.SearchSteps.Count.ToString());
             Metric(446, "整趟道路代价", $"{_demo.Traveler.Route?.TotalCost:0.##}");
+            if (_traffic != null)
+                Metric(478, "等候车辆", _traffic.Vehicles.Count(v => !v.Arrived && v.HoldReason != TrafficWaitReason.None).ToString());
         }
         Rule(491);
         if (_route.Count == 0)
@@ -402,9 +445,24 @@ public partial class CityView : Node2D
         bool hasRoute = _demo.Restart(_from, _to);
         _route.Clear();
         _distances.Clear();
-        _timed = hasRoute && _demo.Traveler.Route is { } trip
-            ? new TimedRoadTraveler(_demo.Network, trip, 0, metersPerUnit: .14, roadSpeedKph: 50, accessSpeedKph: 12)
-            : null;
+        _timed = null;
+        _traffic = null;
+        _leadTruck = null;
+        if (hasRoute && _demo.Traveler.Route is { } trip)
+        {
+            if (IsFreight)
+            {
+                _traffic = new TrafficSimulation(_demo.Network, .14, new TrafficParameters(.05, 2, 4));
+                foreach (var junction in _demo.Network.Nodes)
+                    if (!_demo.Network.HasSignalPlan(junction.ID) && _demo.Network.Segments
+                        .Count(road => road.StartNode == junction || road.EndNode == junction) >= 3)
+                        _traffic.SetUnsignalizedPolicy(junction, new TrafficJunctionPolicy());
+                _leadTruck = _traffic.AddVehicle(trip, 34, 12, lengthMeters: 6);
+                _traffic.AddVehicle(trip, 44, 12, lengthMeters: 6);
+            }
+            else
+                _timed = new TimedRoadTraveler(_demo.Network, trip, 0, metersPerUnit: .14, roadSpeedKph: 50, accessSpeedKph: 12);
+        }
         _distance = _total = 0;
         foreach (var point in hasRoute ? _demo.Route : Array.Empty<WorldPosition>())
         {
@@ -487,6 +545,25 @@ public partial class CityView : Node2D
         GetTree().Quit(result == Error.Ok ? 0 : 1);
     }
 
+    private bool RunFreightSmoke()
+    {
+        var saved = (_from, _to);
+        (_from, _to) = (CityDemo.FactoryIndex, CityDemo.WarehouseIndex);
+        RestartCurrent();
+        bool waited = false;
+        if (_traffic != null)
+            for (int i = 0; i < 900 && _traffic.Vehicles.Any(v => !v.Arrived); i++)
+            {
+                _traffic.Tick(.1);
+                waited |= _traffic.Vehicles.Any(v => v.HoldReason is TrafficWaitReason.FollowingVehicle or
+                    TrafficWaitReason.StartingLaneOccupied or TrafficWaitReason.JunctionOccupied);
+            }
+        bool done = waited && _traffic?.Vehicles.Count == 2 && _traffic.Vehicles.All(v => v.Arrived);
+        (_from, _to) = saved;
+        RestartCurrent();
+        return done;
+    }
+
     private void RunSmoke()
     {
         bool forward = _route.Count >= 4 && _total > 0 && _demo.Traveler.Route?.Reachable == true;
@@ -512,9 +589,11 @@ public partial class CityView : Node2D
         bool step = !_playing && _searchIndex == 1 && _distance == 0;
         Reverse();
         bool reverse = _route.Count >= 4 && _route[0] == end && _route[^1] == start && Searching && _searchIndex == 0;
+        bool access = RunAccessSmoke();
+        bool freight = RunFreightSmoke();
         bool construction = RunConstructionSmoke();
-        bool valid = forward && motion && reverse && equalCost && step && altSteps > 1 && dijkstraSteps > 1 && construction && timed && signalWaitObserved;
-        GD.Print($"CitySimLab Godot smoke: forward={forward}; waypoints={forwardCount}; interpolation={motion}; reverse={reverse}; ALT={altSteps}; Dijkstra={dijkstraSteps}; equalCost={equalCost}; step={step}; construction={construction}; timed={timed}; signalWait={signalWaitObserved}");
+        bool valid = forward && motion && reverse && equalCost && step && altSteps > 1 && dijkstraSteps > 1 && access && freight && construction && timed && signalWaitObserved;
+        GD.Print($"CitySimLab Godot smoke: forward={forward}; waypoints={forwardCount}; interpolation={motion}; reverse={reverse}; ALT={altSteps}; Dijkstra={dijkstraSteps}; equalCost={equalCost}; step={step}; access={access}; freight={freight}; construction={construction}; timed={timed}; signalWait={signalWaitObserved}");
         GetTree().Quit(valid ? 0 : 1);
     }
 }

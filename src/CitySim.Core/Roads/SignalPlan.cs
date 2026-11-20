@@ -9,6 +9,22 @@ public readonly record struct SignalMovement(RoadLane Incoming, RoadLane Outgoin
 
 public readonly record struct SignalConflict(SignalMovement First, SignalMovement Second);
 
+// Explicit per-movement control, never inferred from road class or geometry.
+// Source: https://www.yancheng.gov.cn/art/2025/11/26/art_34214_4383922.html
+public enum SignalRedRule
+{
+    Protected,
+    CircularRightTurnMayYield,
+    CircularRightTurnProhibited,
+    GoverningArrow
+}
+
+public readonly record struct SignalTurnControl(SignalMovement Movement, SignalRedRule RedRule);
+
+// Clear is an affirmative live snapshot covering priority vehicle, bicycle
+// and pedestrian movements, including any traffic already clearing the turn.
+public enum SignalConflictSnapshot { Unknown, Clear, ConflictPresent }
+
 public sealed class SignalPhase
 {
     public double GreenSeconds { get; }
@@ -61,6 +77,10 @@ public sealed class SignalPlan
     readonly Dictionary<SignalMovement, List<(double Start, double End)>> _greens =
         new Dictionary<SignalMovement, List<(double Start, double End)>>();
 
+    readonly List<SignalConflict> _conflicts = new();
+    readonly Dictionary<SignalMovement, SignalRedRule> _redRules = new();
+    readonly List<(double Start, double End)> _greenStages = new();
+
     public IReadOnlyList<SignalPhase> Phases { get; }
     public IReadOnlyCollection<SignalMovement> Movements { get; }
     public double CycleSeconds { get; }
@@ -68,7 +88,7 @@ public sealed class SignalPlan
     public long JunctionId { get; }
 
     public SignalPlan(IEnumerable<SignalPhase> phases, IEnumerable<SignalConflict>? conflicts = null,
-        double offsetSeconds = 0)
+        double offsetSeconds = 0, IEnumerable<SignalTurnControl>? turnControls = null)
     {
         if (phases == null)
             throw new ArgumentNullException(nameof(phases));
@@ -90,7 +110,8 @@ public sealed class SignalPlan
                 if (conflict.First == conflict.Second || conflict.First.Incoming.ToId != JunctionId ||
                     conflict.Second.Incoming.ToId != JunctionId)
                     throw new ArgumentException("A conflict must involve two distinct movements at this junction.", nameof(conflicts));
-                conflictPairs.Add((conflict.First, conflict.Second));
+                if (conflictPairs.Add((conflict.First, conflict.Second)))
+                    _conflicts.Add(conflict);
                 conflictPairs.Add((conflict.Second, conflict.First));
             }
         }
@@ -108,6 +129,7 @@ public sealed class SignalPlan
                 phase.AllRedSeconds > 0 && nextStart <= yellowEnd)
                 throw new ArgumentException("Each interval must fit in a finite cycle without losing its duration.", nameof(phases));
 
+            _greenStages.Add((start, greenEnd));
             for (int i = 0; i < phase.GreenMovements.Count; i++)
             {
                 var movement = phase.GreenMovements[i];
@@ -122,6 +144,18 @@ public sealed class SignalPlan
                 intervals.Add((start, greenEnd));
             }
             start = nextStart;
+        }
+
+        if (turnControls != null)
+        {
+            foreach (var control in turnControls)
+            {
+                if (!_greens.ContainsKey(control.Movement))
+                    throw new ArgumentException("A movement with signal control must have a scheduled green.", nameof(turnControls));
+                if (!Enum.IsDefined(typeof(SignalRedRule), control.RedRule) ||
+                    !_redRules.TryAdd(control.Movement, control.RedRule))
+                    throw new ArgumentException("A movement must have a single valid signal rule.", nameof(turnControls));
+            }
         }
 
         CycleSeconds = start;
@@ -140,10 +174,7 @@ public sealed class SignalPlan
         if (!_greens.TryGetValue(movement, out var intervals))
             return null;
 
-        // Normalize independently to avoid overflow if two finite clocks have opposite signs.
-        double cycleClock = PositiveModulo(clockSeconds, CycleSeconds);
-        double cycleOffset = PositiveModulo(OffsetSeconds, CycleSeconds);
-        double time = PositiveModulo(cycleClock - cycleOffset, CycleSeconds);
+        double time = CycleTime(clockSeconds);
         foreach (var interval in intervals)
         {
             if (time < interval.Start)
@@ -152,6 +183,63 @@ public sealed class SignalPlan
                 return 0d;
         }
         return (CycleSeconds - time) + intervals[0].Start;
+    }
+
+    // A snapshot can permit entry only now. A red or blocked vehicle otherwise
+    // plans for protected green; the caller can recheck when traffic changes.
+    public double? WaitUntilPermitted(SignalMovement movement, double clockSeconds,
+        SignalConflictSnapshot conflictSnapshot = SignalConflictSnapshot.Unknown)
+    {
+        double? wait = WaitUntilGreen(movement, clockSeconds);
+        if (!(wait > 0) || conflictSnapshot != SignalConflictSnapshot.Clear ||
+            !_redRules.TryGetValue(movement, out var rule) ||
+            rule != SignalRedRule.CircularRightTurnMayYield)
+            return wait;
+
+        double time = CycleTime(clockSeconds);
+        foreach (var stage in _greenStages)
+            if (time >= stage.Start && time < stage.End)
+                return 0d; // the configured circular indication is red at this instant
+
+        return wait; // another phase's yellow/all-red is not a permissive circular red
+    }
+
+    internal SignalPlan RemapMovements(Func<SignalMovement, SignalMovement> remap)
+    {
+        if (remap == null) throw new ArgumentNullException(nameof(remap));
+        var mapped = new Dictionary<SignalMovement, SignalMovement>();
+        SignalMovement Map(SignalMovement source)
+        {
+            if (!mapped.TryGetValue(source, out var target))
+                mapped[source] = target = remap(source);
+            return target;
+        }
+
+        var phases = new List<SignalPhase>(Phases.Count);
+        foreach (var phase in Phases)
+        {
+            var movements = new SignalMovement[phase.GreenMovements.Count];
+            for (int i = 0; i < movements.Length; i++)
+                movements[i] = Map(phase.GreenMovements[i]);
+            phases.Add(new SignalPhase(phase.GreenSeconds, phase.YellowSeconds, phase.AllRedSeconds, movements));
+        }
+
+        var conflicts = new List<SignalConflict>(_conflicts.Count);
+        foreach (var conflict in _conflicts)
+            conflicts.Add(new SignalConflict(Map(conflict.First), Map(conflict.Second)));
+
+        var controls = new List<SignalTurnControl>(_redRules.Count);
+        foreach (var rule in _redRules)
+            controls.Add(new SignalTurnControl(Map(rule.Key), rule.Value));
+        return new SignalPlan(phases, conflicts, OffsetSeconds, controls);
+    }
+
+    double CycleTime(double clockSeconds)
+    {
+        // Normalize independently to avoid overflow if two finite clocks have opposite signs.
+        double cycleClock = PositiveModulo(clockSeconds, CycleSeconds);
+        double cycleOffset = PositiveModulo(OffsetSeconds, CycleSeconds);
+        return PositiveModulo(cycleClock - cycleOffset, CycleSeconds);
     }
 
     static double PositiveModulo(double value, double modulus)

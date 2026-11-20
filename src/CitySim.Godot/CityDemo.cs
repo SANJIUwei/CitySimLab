@@ -14,6 +14,9 @@ public sealed class CityDemo
     public RoadNetwork Network { get; } = new();
     public IReadOnlyList<DemoBuilding> Buildings { get; }
     public IReadOnlyList<DemoBlock> Blocks { get; }
+    public IReadOnlyList<Building> AllBuildings { get; }
+    public const int FactoryIndex = 6;
+    public const int WarehouseIndex = 7;
     public IReadOnlyList<WorldPosition> Route { get; private set; } = Array.Empty<WorldPosition>();
     public IReadOnlyList<PathSearchStep> SearchSteps => Traveler.Route?.Global.SearchSteps ?? Array.Empty<PathSearchStep>();
     public GlobalPath? Baseline { get; private set; }
@@ -69,7 +72,11 @@ public sealed class CityDemo
             MakeBuilding("市集", 594, 315, 90, 56, 549, 315),
             MakeBuilding("社区学校", 207, 462, 88, 52, 207, 488),
             MakeBuilding("公交车站", 783, 327, 72, 46, 783, 350),
+            MakeBuilding("钢材工厂", 397, 453, 101, 55, 398, 480),
+            MakeBuilding("货运仓库", 713, 184, 95, 48, 699, 168),
         });
+
+        AllBuildings = Array.AsReadOnly(Buildings.Select(entry => entry.Building).ToArray());
 
         // Decorative land-use markers are not routing objects.
         Blocks = Array.AsReadOnly(new[]
@@ -104,7 +111,9 @@ public sealed class CityDemo
         var destination = Buildings[destinationIndex].Building;
         var traveler = new Thing();
         Traveler = traveler;
-        if (!TripStarter.Request(traveler, _pathCenter, origin, destination))
+        var travel = new TravelOptions(originIndex == FactoryIndex || destinationIndex == FactoryIndex
+            ? VehicleKind.Truck : VehicleKind.Car);
+        if (!TripStarter.Request(traveler, _pathCenter, origin, destination, travel: travel))
         {
             LastFailure = RouteFailure.NoBuildingAccess;
             return false;
@@ -125,10 +134,17 @@ public sealed class CityDemo
         traveler.PrepareTravel(Network);
         Route = points.AsReadOnly();
         // Compare on the same complete request, including access and turns.
-        var baseline = Network.PlanTrip(origin, destination, PathAlgorithm.Dijkstra, captureSearch: true);
+        var baseline = Network.PlanTrip(origin, destination, PathAlgorithm.Dijkstra, captureSearch: true, travel: travel);
         Baseline = baseline.Global;
         BaselineTripCost = baseline.TotalCost;
         return true;
+    }
+
+    public void RecheckBuildingAccess()
+    {
+        foreach (var building in AllBuildings)
+            if (building.Attachment != null && !building.HasActiveAttachment(Network))
+                building.AttachNearest(Network, 85);
     }
 
     private void InstallDemoSignal()
@@ -161,7 +177,8 @@ public sealed class CityDemo
 
     private DemoBuilding MakeBuilding(string name, int x, int y, int width, int height, int doorX, int doorY)
     {
-        var building = new Building(At(x, y), At(doorX, doorY), Network);
+        var building = new Building(At(x, y), At(doorX, doorY));
+        building.AttachNearest(Network, 85);
         return new DemoBuilding(name, building, width, height);
     }
 

@@ -21,7 +21,9 @@ public sealed record RoadProfile(
     double? PostedSpeedKph = null,
     double MinimumAccessSetback = 0,
     int AccessPriority = 0,
-    bool HasMedian = false)
+    bool HasMedian = false,
+    RoadEngineeringDesign? Engineering = null,
+    double? EngineeringMetersPerUnit = null)
 {
     public VehicleKind AllowedTravelModes =>
         Role != RoadRole.Frontage && (UrbanClass == UrbanRoadClass.Expressway ||

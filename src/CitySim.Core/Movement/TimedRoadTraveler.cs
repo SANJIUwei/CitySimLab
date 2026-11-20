@@ -16,6 +16,7 @@ public sealed class TimedRoadTraveler
     readonly double _roadSpeedKph;
     readonly double _accessSpeedKph;
     readonly Func<SignalMovement, double, RightOfWayDecision>? _rightOfWay;
+    readonly Func<SignalMovement, double, SignalConflictSnapshot>? _signalConflicts;
     int _index;
     double _covered;
     bool _enteredLeg;
@@ -27,9 +28,31 @@ public sealed class TimedRoadTraveler
     public TimedTravelState State { get; private set; }
     public RightOfWayDecision? HoldReason { get; private set; }
 
+    internal Func<RoadLane, RoadLane?, WorldPosition, TrafficWaitReason>? TrafficEnter { get; init; }
+    internal Func<RoadLane, WorldPosition, double, double>? TrafficAdvance { get; init; }
+
+    internal double TrafficDistanceTravelledUnits { get; private set; }
+
+    internal RoadLane? TrafficLane => _index < _legs.Count
+        ? (_enteredLeg ? _legs[_index].Lane : _legs[_index].Incoming)
+        : null;
+
+    internal SignalMovement? TrafficUpcomingMovement
+    {
+        get
+        {
+            if (_index >= _legs.Count) return null;
+            int next = _enteredLeg ? _index + 1 : _index;
+            if (next < _legs.Count && _legs[next] is { Incoming: { } incoming, Lane: { } outgoing })
+                return new SignalMovement(incoming, outgoing);
+            return null;
+        }
+    }
+
     public TimedRoadTraveler(RoadNetwork network, Trip trip, double clockSeconds,
         double metersPerUnit, double roadSpeedKph, double accessSpeedKph, TravelOptions? travel = null,
-        Func<SignalMovement, double, RightOfWayDecision>? unsignalizedDecision = null)
+        Func<SignalMovement, double, RightOfWayDecision>? unsignalizedDecision = null,
+        Func<SignalMovement, double, SignalConflictSnapshot>? signalConflictSnapshot = null)
     {
         if (!trip.Reachable || trip.PlannedNetwork != null && (trip.PlannedNetwork != network ||
             trip.PlannedTopology != network.TopologyVersion))
@@ -45,6 +68,7 @@ public sealed class TimedRoadTraveler
         _roadSpeedKph = roadSpeedKph;
         _accessSpeedKph = accessSpeedKph;
         _rightOfWay = unsignalizedDecision;
+        _signalConflicts = signalConflictSnapshot;
         ClockSeconds = clockSeconds;
         Position = trip.From.Access;
 
@@ -108,7 +132,9 @@ public sealed class TimedRoadTraveler
                     }
                     if (leg.Incoming is { } incoming)
                     {
-                        double? wait = _network.WaitUntilTurnPermitted(incoming, lane, ClockSeconds);
+                        var movement = new SignalMovement(incoming, lane);
+                        var conflicts = _signalConflicts?.Invoke(movement, ClockSeconds) ?? SignalConflictSnapshot.Unknown;
+                        double? wait = _network.WaitUntilTurnPermitted(incoming, lane, ClockSeconds, conflicts);
                         if (wait == null)
                         {
                             State = TimedTravelState.NeedsReplan;
@@ -116,7 +142,7 @@ public sealed class TimedRoadTraveler
                         }
                         if (!_network.HasSignalPlan(incoming.ToId) && _rightOfWay != null)
                         {
-                            var decision = _rightOfWay(new SignalMovement(incoming, lane), ClockSeconds);
+                            var decision = _rightOfWay(movement, ClockSeconds);
                             HoldReason = decision == RightOfWayDecision.Proceed ? null : decision;
                             if (HoldReason != null)
                             {
@@ -137,8 +163,14 @@ public sealed class TimedRoadTraveler
                                 State = TimedTravelState.NeedsReplan;
                                 break;
                             }
+                            var updated = _signalConflicts?.Invoke(movement, ClockSeconds) ?? SignalConflictSnapshot.Unknown;
+                            if (_network.WaitUntilTurnPermitted(incoming, lane, ClockSeconds, updated) != 0)
+                                break;
                         }
                     }
+                    State = TimedTravelState.Moving;
+                    if (TrafficEnter != null && TrafficEnter(lane, leg.Incoming, Position) != TrafficWaitReason.None)
+                        break;
                 }
                 _enteredLeg = true;
             }
@@ -148,14 +180,26 @@ public sealed class TimedRoadTraveler
             double distance = WorldPosition.Distance(leg.Start, leg.End);
             double speed = (leg.Lane == null ? _accessSpeedKph
                 : Math.Min(_roadSpeedKph, leg.Lane.EffectivePostedSpeedKph ?? _roadSpeedKph)) / 3.6 / _metersPerUnit;
-            double remainingTime = (distance - _covered) / speed;
-            if (remainingTime > horizon - ClockSeconds)
+            if (!double.IsFinite(distance) || !Positive(speed))
             {
-                _covered += (horizon - ClockSeconds) * speed;
-                Position = Interpolate(leg.Start, leg.End, _covered / distance);
+                State = TimedTravelState.NeedsReplan;
+                break;
+            }
+            double remaining = Math.Max(0, distance - _covered);
+            double remainingTime = remaining / speed;
+            double desired = Math.Min(remaining, Math.Max(0, (horizon - ClockSeconds) * speed));
+            double permitted = leg.Lane != null && TrafficAdvance != null
+                ? Math.Clamp(TrafficAdvance(leg.Lane, Position, desired), 0, desired)
+                : desired;
+            if (permitted < desired || remainingTime > horizon - ClockSeconds)
+            {
+                _covered += permitted;
+                TrafficDistanceTravelledUnits += permitted;
+                if (distance > 0) Position = Interpolate(leg.Start, leg.End, _covered / distance);
                 break;
             }
             ClockSeconds += remainingTime;
+            TrafficDistanceTravelledUnits += remaining;
             Position = leg.End;
             _index++;
             _covered = 0;

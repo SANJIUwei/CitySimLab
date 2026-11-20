@@ -10,6 +10,7 @@ public sealed class RouteEnd
     public TravelDirection EnterFrom { get; }
     public TravelDirection ExitToward { get; }
     public bool IsBuildingAccess { get; }
+    internal Building? SourceBuilding { get; private init; }
 
     public RouteEnd(RoadAttachment attachment, WorldPosition access,
         TravelDirection enterFrom = TravelDirection.Both, TravelDirection exitToward = TravelDirection.Both,
@@ -27,7 +28,8 @@ public sealed class RouteEnd
         if (building.Attachment == null)
             throw new InvalidOperationException("Building is not attached to a segment");
         return new RouteEnd(building.Attachment, building.VehicleAccessPoint ?? building.Entrance,
-            building.Attachment.EnterFrom, building.Attachment.ExitToward, isBuildingAccess: true);
+            building.Attachment.EnterFrom, building.Attachment.ExitToward, isBuildingAccess: true)
+            { SourceBuilding = building };
     }
 
     public static RouteEnd OnRoad(RoadAttachment attachment)

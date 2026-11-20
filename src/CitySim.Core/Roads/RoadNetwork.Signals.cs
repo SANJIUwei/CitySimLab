@@ -39,7 +39,8 @@ public partial class RoadNetwork
     }
 
     // null 禁行；0 可以通行；正值是时间到下一次绿灯，不是路线断开。
-    public double? WaitUntilTurnPermitted(RoadLane incoming, RoadLane outgoing, double clockSeconds)
+    public double? WaitUntilTurnPermitted(RoadLane incoming, RoadLane outgoing, double clockSeconds,
+        SignalConflictSnapshot conflictSnapshot = SignalConflictSnapshot.Unknown)
     {
         if (!double.IsFinite(clockSeconds) || clockSeconds < 0)
             throw new ArgumentOutOfRangeException(nameof(clockSeconds));
@@ -48,7 +49,7 @@ public partial class RoadNetwork
             !TryGetMovement(incoming, outgoing, out _))
             return null;
         return _signals.TryGetValue(incoming.ToId, out var plan)
-            ? plan.WaitUntilGreen(new SignalMovement(incoming, outgoing), clockSeconds)
+            ? plan.WaitUntilPermitted(new SignalMovement(incoming, outgoing), clockSeconds, conflictSnapshot)
             : 0;
     }
 

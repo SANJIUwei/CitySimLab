@@ -125,7 +125,9 @@ public partial class RoadNetwork
 
         if (!_baseCosts.TryGetValue(a.Segment, out var aCost) || !_baseCosts.TryGetValue(b.Segment, out var bCost) ||
             from.IsBuildingAccess && !a.Segment.Profile.AllowsBuildingAccess ||
-            to.IsBuildingAccess && !b.Segment.Profile.AllowsBuildingAccess)
+            to.IsBuildingAccess && !b.Segment.Profile.AllowsBuildingAccess ||
+            from.SourceBuilding is { } source && (!ReferenceEquals(source.Attachment, a) || !source.HasActiveAttachment(this)) ||
+            to.SourceBuilding is { } destination && (!ReferenceEquals(destination.Attachment, b) || !destination.HasActiveAttachment(this)))
             return Make(GlobalPath.Failed(RouteFailure.NoBuildingAccess), false);
 
         var startLanes = a.Segment.RoutingLanes.Where(l => l.CanTravel(options) && (from.ExitToward & l.DirectionFlag) != 0).ToArray();
